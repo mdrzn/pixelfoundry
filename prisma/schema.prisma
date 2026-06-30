@@ -1,0 +1,299 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String           @id @default(cuid())
+  name           String?
+  email          String           @unique
+  emailVerified  DateTime?
+  image          String?
+  hashedPassword String?
+  role           UserRole         @default(USER)
+  credits        Int              @default(0)
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  accounts       Account[]
+  sessions       Session[]
+  creditLedger   CreditLedger[]
+  jobs           Job[]
+  assets         Asset[]
+  providerCredentialsCreated ProviderCredential[] @relation("ProviderCredentialCreatedBy")
+  providerCredentialsUpdated ProviderCredential[] @relation("ProviderCredentialUpdatedBy")
+  imagePresets   ImagePreset[]
+  canvases       Canvas[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model CreditLedger {
+  id           String        @id @default(cuid())
+  userId       String
+  jobId        String?
+  delta        Int
+  balanceAfter Int
+  reason       CreditReason
+  metadata     Json?
+  createdAt    DateTime      @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  job  Job? @relation(fields: [jobId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([jobId])
+}
+
+model Job {
+  id             String       @id @default(cuid())
+  userId         String
+  type           JobType
+  status         JobStatus    @default(QUEUED)
+  provider       JobProvider  @default(MOCK)
+  providerJobId  String?
+  title          String?
+  prompt         String
+  negativePrompt String?
+  inputImageUrl  String?
+  outputAssetId  String?
+  payload        Json?
+  result         Json?
+  cost           Int          @default(0)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  completedAt    DateTime?
+
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  outputAsset   Asset?        @relation("JobOutputAsset", fields: [outputAssetId], references: [id], onDelete: SetNull)
+  creditEntries CreditLedger[]
+  inputAssets   JobInputAsset[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([provider])
+  @@index([userId, createdAt])
+  @@index([type])
+}
+
+model Asset {
+  id        String   @id @default(cuid())
+  userId    String
+  type      AssetType
+  title     String?
+  url       String
+  thumbnail String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobOutput Job[]    @relation("JobOutputAsset")
+  presetReferences ImagePresetReference[]
+  jobInputUsages   JobInputAsset[]
+
+  @@index([userId])
+  @@index([userId, type, createdAt])
+  @@index([type])
+}
+
+model ProviderCredential {
+  id         String    @id @default(cuid())
+  provider   Provider
+  label      String?
+  apiKey     String
+  metadata   Json?
+  isActive   Boolean   @default(true)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  createdBy  String?
+  updatedBy  String?
+
+  createdByUser User? @relation("ProviderCredentialCreatedBy", fields: [createdBy], references: [id], onDelete: SetNull)
+  updatedByUser User? @relation("ProviderCredentialUpdatedBy", fields: [updatedBy], references: [id], onDelete: SetNull)
+
+  @@unique([provider])
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum JobType {
+  CREATE_IMAGE
+  EDIT_IMAGE
+  CREATE_VIDEO
+}
+
+enum JobStatus {
+  QUEUED
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum JobProvider {
+  MOCK
+  REPLICATE
+  GEMINI
+  OPENAI
+}
+
+enum AssetType {
+  IMAGE
+  VIDEO
+}
+
+enum CreditReason {
+  GRANT
+  DEDUCT
+  ADJUST
+  REFUND
+}
+
+model ProviderModel {
+  id            String    @id @default(cuid())
+  provider      Provider
+  slug          String
+  displayName   String
+  description   String?
+  jobTypes      JobType[]
+  creditCost    Int
+  isActive      Boolean   @default(true)
+  metadata      Json?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  imagePresets  ImagePreset[]
+
+  @@unique([provider, slug])
+}
+
+enum Provider {
+  REPLICATE
+  GEMINI
+  OPENAI
+}
+
+model ImagePreset {
+  id              String            @id @default(cuid())
+  userId          String?
+  visibility      PresetVisibility  @default(PRIVATE)
+  name            String
+  description     String?
+  providerModelId String?
+  prompt          String
+  negativePrompt  String?
+  aspectRatio     String?
+  width           Int?
+  height          Int?
+  cfgScale        Float?
+  steps           Int?
+  seed            Int?
+  sampler         String?
+  outputCount     Int               @default(1)
+  upscale         Boolean          @default(false)
+  metadata        Json?
+  tags            String[]          @default([])
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  user           User?         @relation(fields: [userId], references: [id], onDelete: SetNull)
+  providerModel  ProviderModel? @relation(fields: [providerModelId], references: [id], onDelete: SetNull)
+  references     ImagePresetReference[]
+
+  @@index([userId])
+  @@index([visibility])
+  @@index([providerModelId])
+}
+
+model ImagePresetReference {
+  id        String      @id @default(cuid())
+  presetId  String
+  assetId   String
+  createdAt DateTime    @default(now())
+
+  preset ImagePreset @relation(fields: [presetId], references: [id], onDelete: Cascade)
+  asset  Asset       @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@unique([presetId, assetId])
+  @@index([assetId])
+}
+
+model JobInputAsset {
+  id        String       @id @default(cuid())
+  jobId     String
+  assetId   String
+  role      JobAssetRole @default(REFERENCE)
+  createdAt DateTime     @default(now())
+
+  job   Job   @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  asset Asset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@index([jobId])
+  @@index([assetId])
+}
+
+enum PresetVisibility {
+  PRIVATE
+  TEAM
+  GLOBAL
+}
+
+enum JobAssetRole {
+  REFERENCE
+  VARIATION
+  MASK
+}
+
+model Canvas {
+  id        String   @id @default(cuid())
+  userId    String
+  name      String   @default("Untitled Canvas")
+  nodes     Json     @default("[]")
+  edges     Json     @default("[]")
+  viewport  Json     @default("{\"x\":0,\"y\":0,\"zoom\":1}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
