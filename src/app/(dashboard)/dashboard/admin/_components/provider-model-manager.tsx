@@ -32,6 +32,7 @@ const providerLabels: Record<Provider, string> = {
   [Provider.REPLICATE]: "Replicate",
   [Provider.GEMINI]: "Gemini",
   [Provider.OPENAI]: "OpenAI",
+  [Provider.FAL]: "fal",
 };
 
 const jobTypeLabels: Record<JobType, string> = {
@@ -47,6 +48,7 @@ const providerFetchRoutes: Record<Provider, string> = {
   [Provider.REPLICATE]: "/api/admin/replicate-models",
   [Provider.GEMINI]: "/api/admin/gemini-models",
   [Provider.OPENAI]: "/api/admin/openai-models",
+  [Provider.FAL]: "/api/admin/fal-models",
 };
 
 type ProviderModelManagerProps = {
@@ -310,6 +312,22 @@ export function ProviderModelManager({ models }: ProviderModelManagerProps) {
       pagesFetched: 0,
     },
     [Provider.OPENAI]: {
+      loading: false,
+      loadingMore: false,
+      loaded: false,
+      error: null,
+      models: [],
+      cursor: null,
+      hasMore: false,
+      searchQuery: "",
+      jobTypeFilter: "ALL",
+      sortBy: "popularity",
+      fetchedAll: false,
+      totalFetched: 0,
+      timeoutOccurred: false,
+      pagesFetched: 0,
+    },
+    [Provider.FAL]: {
       loading: false,
       loadingMore: false,
       loaded: false,

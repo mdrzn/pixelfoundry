@@ -184,11 +184,13 @@ enum JobProvider {
   REPLICATE
   GEMINI
   OPENAI
+  FAL
 }
 
 enum AssetType {
   IMAGE
   VIDEO
+  AUDIO
 }
 
 enum CreditReason {
@@ -219,6 +221,7 @@ enum Provider {
   REPLICATE
   GEMINI
   OPENAI
+  FAL
 }
 
 model ImagePreset {

@@ -18,6 +18,7 @@ const providerLabels: Record<Provider, string> = {
   [Provider.REPLICATE]: "Replicate",
   [Provider.OPENAI]: "OpenAI",
   [Provider.GEMINI]: "Gemini",
+  [Provider.FAL]: "fal",
 };
 
 function maskKey(key?: string | null) {

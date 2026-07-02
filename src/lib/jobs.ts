@@ -678,6 +678,8 @@ function mapProviderToJobProvider(provider: Provider): JobProvider {
       return JobProvider.GEMINI;
     case Provider.OPENAI:
       return JobProvider.OPENAI;
+    case Provider.FAL:
+      return JobProvider.FAL;
     default:
       return JobProvider.MOCK;
   }

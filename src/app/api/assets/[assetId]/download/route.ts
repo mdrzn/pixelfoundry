@@ -12,6 +12,7 @@ const DATA_URL_PATTERN = /^data:([^;]+);base64,(.+)$/;
 const DEFAULT_EXTENSION: Record<AssetType, string> = {
   [AssetType.IMAGE]: "png",
   [AssetType.VIDEO]: "mp4",
+  [AssetType.AUDIO]: "mp3",
 };
 
 function sanitizeFileName(value: string) {
