@@ -8,6 +8,7 @@ import { UserRole } from "@prisma/client";
 import {
   BadgeDollarSign,
   Brush,
+  AudioLines,
   Clapperboard,
   FilmIcon,
   ImageIcon,
@@ -53,6 +54,7 @@ const iconMap: Record<string, ElementType> = {
   "Edit Image": Brush,
   "Create Video": FilmIcon,
   "Multi-Shot": Clapperboard,
+  "Voice-over": AudioLines,
   "My Library": LibraryIcon,
   Canvas: Workflow,
   "Billing & Credits": BadgeDollarSign,

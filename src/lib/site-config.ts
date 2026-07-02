@@ -20,6 +20,7 @@ export const dashboardNav = {
     { name: "Edit Image", href: "/dashboard/edit-image" },
     { name: "Create Video", href: "/dashboard/create-video" },
     { name: "Multi-Shot", href: "/dashboard/multi-shot" },
+    { name: "Voice-over", href: "/dashboard/voiceover" },
     { name: "Canvas", href: "/dashboard/canvas" },
     { name: "My Library", href: "/dashboard/library" },
     { name: "Billing & Credits", href: "/dashboard/billing" },
