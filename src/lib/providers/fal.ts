@@ -27,13 +27,14 @@ export function buildFalInput(input: Rec, inputMap: Record<string, string>, stat
 
 export function extractFalAssets(data: Rec, type: AssetType): ProviderRunAsset[] {
   const urls: string[] = [];
-  const pushObjUrl = (o: unknown) => {
+  const pushUrl = (o: unknown) => {
+    if (typeof o === "string") { urls.push(o); return; }
     if (o && typeof o === "object" && "url" in o && typeof (o as Rec).url === "string") urls.push((o as Rec).url as string);
   };
-  if (Array.isArray((data as Rec).images)) ((data as Rec).images as unknown[]).forEach(pushObjUrl);
-  if (Array.isArray((data as Rec).videos)) ((data as Rec).videos as unknown[]).forEach(pushObjUrl);
-  pushObjUrl((data as Rec).video);
-  pushObjUrl((data as Rec).audio);
+  if (Array.isArray((data as Rec).images)) ((data as Rec).images as unknown[]).forEach(pushUrl);
+  if (Array.isArray((data as Rec).videos)) ((data as Rec).videos as unknown[]).forEach(pushUrl);
+  pushUrl((data as Rec).video);
+  pushUrl((data as Rec).audio);
   if (typeof (data as Rec).video_url === "string") urls.push((data as Rec).video_url as string);
   if (typeof (data as Rec).audio_url === "string") urls.push((data as Rec).audio_url as string);
   return urls.map((url) => ({ type, url, thumbnail: type === AssetType.IMAGE ? url : undefined }));
@@ -45,7 +46,7 @@ async function falKey(): Promise<string> {
   return cred.apiKey;
 }
 
-export async function runFalStep(endpoint: string, input: Rec): Promise<Rec> {
+export async function runFalStep(endpoint: string, input: Rec): Promise<{ requestId: string; data: Rec }> {
   const key = await falKey();
   const headers = { Authorization: `Key ${key}`, "Content-Type": "application/json" };
   const submit = await fetch(`${FAL_QUEUE}/${endpoint}`, { method: "POST", headers, body: JSON.stringify(input) });
@@ -61,7 +62,7 @@ export async function runFalStep(endpoint: string, input: Rec): Promise<Rec> {
     if (status === "COMPLETED") {
       const res = await fetch(`${FAL_QUEUE}/${endpoint}/requests/${request_id}`, { headers });
       if (!res.ok) throw new ProviderJobError(`fal result failed: ${await res.text()}`, { providerJobId: request_id });
-      return (await res.json()) as Rec;
+      return { requestId: request_id, data: (await res.json()) as Rec };
     }
     if (status === "FAILED") throw new ProviderJobError("fal reported FAILED.", { providerJobId: request_id });
     await new Promise((r) => setTimeout(r, POLL_MS));
@@ -88,10 +89,10 @@ export async function runFalImageJob(options: ProviderJobOptions<ImageJobInput>)
     meta.inputMap ?? { prompt: "prompt", negativePrompt: "negative_prompt", aspectRatio: "aspect_ratio", width: "width", height: "height", seed: "seed" },
     meta.staticInputs ?? {},
   );
-  const data = await runFalStep(meta.falEndpoint, input);
+  const { requestId, data } = await runFalStep(meta.falEndpoint, input);
   const assets = extractFalAssets(data, AssetType.IMAGE);
   if (!assets.length) throw new ProviderJobError("fal returned no image outputs.");
-  return { assets, rawResponse: data };
+  return { providerJobId: requestId, assets, rawResponse: data };
 }
 
 export async function runFalVideoJob(options: ProviderJobOptions<VideoJobInput>): Promise<ProviderRunResult> {
@@ -101,8 +102,8 @@ export async function runFalVideoJob(options: ProviderJobOptions<VideoJobInput>)
     meta.inputMap ?? { prompt: "prompt", negativePrompt: "negative_prompt", duration: "duration", aspectRatio: "aspect_ratio" },
     meta.staticInputs ?? {},
   );
-  const data = await runFalStep(meta.falEndpoint, input);
+  const { requestId, data } = await runFalStep(meta.falEndpoint, input);
   const assets = extractFalAssets(data, AssetType.VIDEO);
   if (!assets.length) throw new ProviderJobError("fal returned no video outputs.");
-  return { assets, rawResponse: data };
+  return { providerJobId: requestId, assets, rawResponse: data };
 }
