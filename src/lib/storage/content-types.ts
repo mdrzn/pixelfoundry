@@ -1,5 +1,9 @@
 export const EXT_BY_CONTENT_TYPE: Record<string, string> = {
   "image/png": "png",
+  // Both JPEG aliases map to the "jpg" extension. Order matters: "image/jpeg"
+  // must come LAST so the auto-derived inverse map (last-write-wins) resolves
+  // the "jpg" extension back to the canonical "image/jpeg".
+  "image/jpg": "jpg",
   "image/jpeg": "jpg",
   "image/webp": "webp",
   "image/gif": "gif",

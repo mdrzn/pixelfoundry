@@ -20,17 +20,24 @@ export async function persistUrlToStorage(
   args: { kind: string; id: string; url: string },
 ): Promise<PersistedAsset | null> {
   if (args.url.startsWith("data:")) {
-    const m = /^data:([^;]+);base64,(.*)$/.exec(args.url);
+    const m = /^data:([^,]*?);base64,([\s\S]*)$/.exec(args.url);
     if (!m) return null;
-    return persistBytesToStorage(store, { kind: args.kind, id: args.id, data: Buffer.from(m[2], "base64"), contentType: m[1] });
+    const mediaType = m[1].split(";")[0].trim() || "application/octet-stream";
+    const payload = m[2];
+    if (!payload) return null; // reject empty-payload data URLs
+    return persistBytesToStorage(store, { kind: args.kind, id: args.id, data: Buffer.from(payload, "base64"), contentType: mediaType });
   }
   try {
     const resp = await fetch(args.url);
-    if (!resp.ok) return null;
+    if (!resp.ok) {
+      console.warn("[persist] failed for", args.url, "status", resp.status);
+      return null;
+    }
     const contentType = resp.headers.get("content-type") ?? "application/octet-stream";
     const data = Buffer.from(await resp.arrayBuffer());
     return persistBytesToStorage(store, { kind: args.kind, id: args.id, data, contentType });
-  } catch {
+  } catch (err) {
+    console.warn("[persist] failed for", args.url, err);
     return null;
   }
 }

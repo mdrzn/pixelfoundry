@@ -197,6 +197,18 @@ async function finalizeProviderJob({
 
   const persisted = await persistUrlToStorage(storage, { kind: "asset", id: asset.id, url: primary.url });
 
+  if (!persisted) {
+    // Deliberate: persistence failed, but the generation already succeeded and
+    // the user was already charged. We complete the job with the provider's
+    // (temporary/expiring) URL rather than fail + refund. Durable persist-retry
+    // is deferred to the Phase 2 worker.
+    console.warn("[finalizeProviderJob] persistence failed; completing with provider URL", {
+      jobId,
+      assetId: asset.id,
+      url: primary.url,
+    });
+  }
+
   await prisma.asset.update({
     where: { id: asset.id },
     data: persisted

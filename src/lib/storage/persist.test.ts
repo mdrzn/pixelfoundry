@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { persistBytesToStorage, persistUrlToStorage } from "./persist";
+import { contentTypeFromKey } from "@/lib/storage/content-types";
 import type { StorageDriver } from "./types";
 
 function fakeStore(): StorageDriver {
@@ -53,5 +54,44 @@ describe("persistUrlToStorage", () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response("no", { status: 500 })));
     const res = await persistUrlToStorage(store, { kind: "asset", id: "clx4", url: "https://cdn/x.mp4" });
     expect(res).toBeNull();
+  });
+
+  it("returns null for a malformed data URL (no ;base64,)", async () => {
+    const store = fakeStore();
+    const res = await persistUrlToStorage(store, { kind: "asset", id: "clx5", url: "data:image/png,notbase64" });
+    expect(res).toBeNull();
+  });
+
+  it("handles a data URL with charset params", async () => {
+    const store = fakeStore();
+    const dataUrl = "data:image/png;charset=utf-8;base64," + Buffer.from("hi").toString("base64");
+    const res = await persistUrlToStorage(store, { kind: "asset", id: "clx6", url: dataUrl });
+    expect(res).not.toBeNull();
+    expect(res!.mimeType).toBe("image/png");
+    expect(res!.storageKey).toBe("asset/cl/clx6.png");
+  });
+
+  it("returns null for an empty-payload data URL", async () => {
+    const store = fakeStore();
+    const res = await persistUrlToStorage(store, { kind: "asset", id: "clx7", url: "data:image/png;base64," });
+    expect(res).toBeNull();
+  });
+
+  it("returns null when the remote fetch throws", async () => {
+    const store = fakeStore();
+    vi.stubGlobal("fetch", vi.fn(async () => { throw new Error("network down"); }));
+    const res = await persistUrlToStorage(store, { kind: "asset", id: "clx8", url: "https://cdn/x.mp4" });
+    expect(res).toBeNull();
+  });
+});
+
+describe("round-trip content-type consistency", () => {
+  it("stored keys resolve back to a real image content type (not octet-stream)", async () => {
+    const store = fakeStore();
+    for (const ct of ["image/png", "image/jpg"]) {
+      const res = await persistBytesToStorage(store, { kind: "asset", id: "clround", data: Buffer.from("x"), contentType: ct });
+      expect(contentTypeFromKey(res.storageKey)).not.toBe("application/octet-stream");
+      expect(contentTypeFromKey(res.storageKey)).toMatch(/^image\/(png|jpeg|jpg)$/);
+    }
   });
 });
