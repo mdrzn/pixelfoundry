@@ -16,3 +16,14 @@ export const SHORTS_MODEL_SLUGS = {
   subtitle: "fal-ai/auto-subtitle",
   mux: "fal-ai/ffmpeg-api/mux-audio",
 } as const;
+
+/**
+ * Slug-resolved models for the Scene Builder studio. `script` reuses the
+ * established any-llm slug; `imageEdit` is a placeholder fal slug seeded in
+ * P5-5 (adjust once the real reference-guided edit endpoint is confirmed).
+ * Image + video models are resolved by job type at submit time.
+ */
+export const SCENE_BUILDER_MODEL_SLUGS = {
+  script: "fal-ai/any-llm",
+  imageEdit: "fal-ai/bytedance/seedream/v5/lite/edit",
+} as const;

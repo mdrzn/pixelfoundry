@@ -3,11 +3,13 @@ import type { PipelineDefinition } from "../types";
 import { multiShotDefinition } from "./multi-shot";
 import { voiceoverDefinition } from "./voiceover";
 import { shortsDefinition } from "./shorts";
+import { sceneBuilderDefinition } from "./scene-builder";
 
 const REGISTRY: Partial<Record<PipelineType, PipelineDefinition>> = {
   [PipelineType.MULTI_SHOT]: multiShotDefinition,
   [PipelineType.VOICEOVER]: voiceoverDefinition,
   [PipelineType.SHORTS]: shortsDefinition,
+  [PipelineType.SCENE_BUILDER]: sceneBuilderDefinition,
 };
 
 export function getDefinition(type: PipelineType): PipelineDefinition {
