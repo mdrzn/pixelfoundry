@@ -2,6 +2,7 @@ import { AssetType } from "@prisma/client";
 
 const IMAGE_MAX_BYTES = 6 * 1024 * 1024; // 6 MB
 const AUDIO_MAX_BYTES = 25 * 1024 * 1024; // 25 MB
+const VIDEO_MAX_BYTES = 100 * 1024 * 1024; // 100 MB
 
 const IMAGE_MIME_TYPES = new Set([
   "image/png",
@@ -19,8 +20,13 @@ const AUDIO_MIME_TYPES = new Set([
   "audio/webm",
 ]);
 
+const VIDEO_MIME_TYPES = new Set([
+  "video/mp4",
+  "video/webm",
+]);
+
 export interface UploadClass {
-  kind: "image" | "audio";
+  kind: "image" | "audio" | "video";
   assetType: AssetType;
   maxBytes: number;
 }
@@ -38,6 +44,10 @@ export function classifyUpload(mimeType: string): UploadClass | null {
 
   if (AUDIO_MIME_TYPES.has(mime)) {
     return { kind: "audio", assetType: AssetType.AUDIO, maxBytes: AUDIO_MAX_BYTES };
+  }
+
+  if (VIDEO_MIME_TYPES.has(mime)) {
+    return { kind: "video", assetType: AssetType.VIDEO, maxBytes: VIDEO_MAX_BYTES };
   }
 
   return null;

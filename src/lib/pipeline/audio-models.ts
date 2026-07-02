@@ -34,6 +34,17 @@ export const SCENE_BUILDER_MODEL_SLUGS = {
  * (adjust once the real lip-sync endpoint is confirmed). The image model is
  * resolved by job type at submit time.
  */
+/**
+ * Slug-resolved models for the asset-output translation tools (P6-2).
+ * `translateImage` reuses the Scene Builder seedream edit slug (already seeded)
+ * so no new provider model is required; `subtitle` reuses the auto-subtitle
+ * slug seeded in P5-5.
+ */
+export const TRANSLATION_ASSET_MODEL_SLUGS = {
+  translateImage: SCENE_BUILDER_MODEL_SLUGS.imageEdit,
+  subtitle: SHORTS_MODEL_SLUGS.subtitle,
+} as const;
+
 export const PODCAST_MODEL_SLUGS = {
   script: "fal-ai/any-llm",
   tts: "fal-ai/minimax/speech-2.6-hd",

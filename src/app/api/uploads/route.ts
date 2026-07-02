@@ -58,6 +58,22 @@ function isPlausibleAudioMagicBytes(buffer: Buffer): boolean {
   return true;
 }
 
+/**
+ * Best-effort video content sniff. Recognises MP4 ("ftyp" box at offset 4) and
+ * WebM / Matroska (EBML header 1A 45 DF A3). Falls back to trusting the
+ * (already allow-listed) MIME type for anything not cheaply sniffable.
+ */
+function isPlausibleVideoMagicBytes(buffer: Buffer): boolean {
+  // MP4: "ftyp" box at offset 4
+  if (matches(buffer, [0x66, 0x74, 0x79, 0x70], 4)) return true;
+
+  // WebM / Matroska: EBML header 1A 45 DF A3
+  if (matches(buffer, [0x1a, 0x45, 0xdf, 0xa3])) return true;
+
+  // Unknown container: trust the allow-listed MIME type.
+  return true;
+}
+
 export async function POST(request: NextRequest) {
   const session = await getSession();
   if (!session?.user?.id) {
@@ -77,7 +93,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         error:
-          "Unsupported format. Use an image (PNG, JPEG, WEBP, GIF) or audio (MP3, WAV, M4A, WEBM) file.",
+          "Unsupported format. Use an image (PNG, JPEG, WEBP, GIF), audio (MP3, WAV, M4A, WEBM) or video (MP4, WEBM) file.",
       },
       { status: 415 },
     );
@@ -85,7 +101,12 @@ export async function POST(request: NextRequest) {
 
   if (file.size > classification.maxBytes) {
     const limitMb = Math.round(classification.maxBytes / (1024 * 1024));
-    const noun = classification.kind === "audio" ? "Audio files" : "Reference images";
+    const noun =
+      classification.kind === "audio"
+        ? "Audio files"
+        : classification.kind === "video"
+          ? "Video files"
+          : "Reference images";
     return NextResponse.json(
       { error: `${noun} must be smaller than ${limitMb}MB.` },
       { status: 413 },
@@ -98,7 +119,9 @@ export async function POST(request: NextRequest) {
   const contentIsValid =
     classification.kind === "image"
       ? isValidImageMagicBytes(buffer)
-      : isPlausibleAudioMagicBytes(buffer);
+      : classification.kind === "video"
+        ? isPlausibleVideoMagicBytes(buffer)
+        : isPlausibleAudioMagicBytes(buffer);
 
   if (!contentIsValid) {
     return NextResponse.json(

@@ -7,6 +7,8 @@ import { sceneBuilderDefinition } from "./scene-builder";
 import { podcastDefinition } from "./podcast";
 import { translateTextDefinition } from "./translate-text";
 import { transcribeDefinition } from "./transcribe";
+import { translateImageDefinition } from "./translate-image";
+import { subtitlesDefinition } from "./subtitles";
 
 const REGISTRY: Partial<Record<PipelineType, PipelineDefinition>> = {
   [PipelineType.MULTI_SHOT]: multiShotDefinition,
@@ -16,6 +18,8 @@ const REGISTRY: Partial<Record<PipelineType, PipelineDefinition>> = {
   [PipelineType.PODCAST]: podcastDefinition,
   [PipelineType.TRANSLATE_TEXT]: translateTextDefinition,
   [PipelineType.TRANSCRIBE]: transcribeDefinition,
+  [PipelineType.TRANSLATE_IMAGE]: translateImageDefinition,
+  [PipelineType.SUBTITLES]: subtitlesDefinition,
 };
 
 export function getDefinition(type: PipelineType): PipelineDefinition {

@@ -27,6 +27,16 @@ describe("classifyUpload", () => {
     }
   });
 
+  it("classifies mp4/webm video as video with the 100MB cap", () => {
+    for (const mime of ["video/mp4", "video/webm"]) {
+      expect(classifyUpload(mime)).toEqual({
+        kind: "video",
+        assetType: AssetType.VIDEO,
+        maxBytes: 100 * 1024 * 1024,
+      });
+    }
+  });
+
   it("tolerates a charset parameter and casing", () => {
     expect(classifyUpload("IMAGE/PNG; charset=binary")?.kind).toBe("image");
   });
