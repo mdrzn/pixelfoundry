@@ -8,6 +8,7 @@ export type PipelineView = {
   progress: number;
   error: string | null;
   outputUrl: string | null;
+  outputData: unknown | null;
   steps: { key: string; name: string; status: string }[];
 };
 const TERMINAL = ["COMPLETED", "FAILED", "PARTIAL", "CANCELED"];

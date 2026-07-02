@@ -325,6 +325,9 @@ enum PipelineType {
   DUBBING_LIPSYNC
   VOICEOVER
   SUBTITLES
+  TRANSLATE_TEXT
+  TRANSCRIBE
+  TRANSLATE_IMAGE
 }
 
 enum PipelineStatus {

@@ -23,8 +23,8 @@ describe("getPipelineStatus", () => {
       progress: 42,
       error: null,
       steps: [
-        { key: "llm", name: "Prompt", status: "SUCCEEDED" },
-        { key: "img", name: "Image", status: "RUNNING" },
+        { key: "llm", name: "Prompt", status: "SUCCEEDED", dependsOn: [], output: null },
+        { key: "img", name: "Image", status: "RUNNING", dependsOn: ["llm"], output: null },
       ],
       outputAsset: { url: "https://cdn.example/out.png" },
     });
@@ -37,11 +37,53 @@ describe("getPipelineStatus", () => {
       progress: 42,
       error: null,
       outputUrl: "https://cdn.example/out.png",
+      outputData: null,
       steps: [
         { key: "llm", name: "Prompt", status: "SUCCEEDED" },
         { key: "img", name: "Image", status: "RUNNING" },
       ],
     });
+  });
+
+  it("exposes the terminal sink step's output as outputData", async () => {
+    findUnique.mockResolvedValue({
+      id: "p1",
+      userId: "u1",
+      status: "COMPLETED",
+      progress: 100,
+      error: null,
+      steps: [
+        {
+          key: "translate",
+          name: "Translate",
+          status: "DONE",
+          dependsOn: [],
+          output: { translation: "hola" },
+        },
+      ],
+      outputAsset: null,
+    });
+
+    const view = await getPipelineStatus("p1", "u1");
+    expect(view?.outputData).toEqual({ translation: "hola" });
+  });
+
+  it("picks the last DONE sink when multiple are un-depended-on", async () => {
+    findUnique.mockResolvedValue({
+      id: "p1",
+      userId: "u1",
+      status: "COMPLETED",
+      progress: 100,
+      error: null,
+      steps: [
+        { key: "a", name: "A", status: "DONE", dependsOn: [], output: { text: "first" } },
+        { key: "b", name: "B", status: "DONE", dependsOn: [], output: { text: "last" } },
+      ],
+      outputAsset: null,
+    });
+
+    const view = await getPipelineStatus("p1", "u1");
+    expect(view?.outputData).toEqual({ text: "last" });
   });
 
   it("maps a missing outputAsset to outputUrl null", async () => {

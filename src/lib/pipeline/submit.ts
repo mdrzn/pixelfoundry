@@ -7,7 +7,14 @@ import { enqueuePipeline } from "@/lib/queue/pipeline-queue";
 type SubmitArgs = { userId: string; type: PipelineType; params: Record<string, unknown> };
 
 // Which param keys hold providerModelIds to preload (per current definitions).
-const MODEL_PARAM_KEYS = ["imageModelId", "videoModelId", "llmModelId"];
+const MODEL_PARAM_KEYS = [
+  "imageModelId",
+  "videoModelId",
+  "llmModelId",
+  "sttModelId",
+  "ttsModelId",
+  "cloneModelId",
+];
 
 export async function submitPipeline(
   { userId, type, params }: SubmitArgs,

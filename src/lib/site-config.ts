@@ -24,6 +24,8 @@ export const dashboardNav = {
     { name: "Shorts", href: "/dashboard/shorts" },
     { name: "Scene Builder", href: "/dashboard/scene-builder" },
     { name: "Podcast", href: "/dashboard/podcast" },
+    { name: "Translate Text", href: "/dashboard/translate-text" },
+    { name: "Transcribe", href: "/dashboard/transcribe" },
     { name: "Canvas", href: "/dashboard/canvas" },
     { name: "My Library", href: "/dashboard/library" },
     { name: "Billing & Credits", href: "/dashboard/billing" },
