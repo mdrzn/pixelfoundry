@@ -89,6 +89,26 @@ describe("runFalStep", () => {
     expect(result).toEqual({ requestId: "req1", data: { images: [{ url: "https://x/i.png" }] } });
   });
 
+  it("polls the status_url/response_url fal returns (subpath models)", async () => {
+    // fal returns URLs based on the BASE app id (fal-ai/flux), not the
+    // subpath submit endpoint (fal-ai/flux/schnell). Must use what fal sends.
+    const statusUrl = "https://queue.fal.run/fal-ai/flux/requests/req9/status";
+    const responseUrl = "https://queue.fal.run/fal-ai/flux/requests/req9";
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse({ request_id: "req9", status_url: statusUrl, response_url: responseUrl }))
+      .mockResolvedValueOnce(jsonResponse({ status: "COMPLETED" }))
+      .mockResolvedValueOnce(jsonResponse({ images: [{ url: "https://x/i.png" }] }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await runFalStep("fal-ai/flux/schnell", {});
+    expect(result.requestId).toBe("req9");
+    // 2nd fetch hits the returned status_url, 3rd hits response_url — NOT the
+    // constructed .../fal-ai/flux/schnell/requests/... paths.
+    expect(fetchMock.mock.calls[1][0]).toBe(statusUrl);
+    expect(fetchMock.mock.calls[2][0]).toBe(responseUrl);
+  });
+
   it("throws with providerJobId on FAILED", async () => {
     const fetchMock = vi
       .fn()

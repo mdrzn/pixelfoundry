@@ -51,16 +51,28 @@ export async function runFalStep(endpoint: string, input: Rec): Promise<{ reques
   const headers = { Authorization: `Key ${key}`, "Content-Type": "application/json" };
   const submit = await fetch(`${FAL_QUEUE}/${endpoint}`, { method: "POST", headers, body: JSON.stringify(input) });
   if (!submit.ok) throw new ProviderJobError(`fal submit failed: ${await submit.text()}`);
-  const { request_id } = (await submit.json()) as { request_id?: string };
+  const submitJson = (await submit.json()) as {
+    request_id?: string;
+    status_url?: string;
+    response_url?: string;
+  };
+  const request_id = submitJson.request_id;
   if (!request_id) throw new ProviderJobError("fal did not return a request_id.");
+
+  // fal returns status_url/response_url based on the BASE app id (e.g.
+  // "fal-ai/flux"), which differs from a subpath submit endpoint like
+  // "fal-ai/flux/schnell". Always use the URLs fal hands back; fall back to
+  // constructing them only if absent.
+  const statusUrl = submitJson.status_url ?? `${FAL_QUEUE}/${endpoint}/requests/${request_id}/status`;
+  const responseUrl = submitJson.response_url ?? `${FAL_QUEUE}/${endpoint}/requests/${request_id}`;
 
   const deadline = Date.now() + MAX_WAIT_MS;
   while (Date.now() < deadline) {
-    const st = await fetch(`${FAL_QUEUE}/${endpoint}/requests/${request_id}/status`, { headers });
+    const st = await fetch(statusUrl, { headers });
     if (!st.ok) throw new ProviderJobError(`fal status failed: ${await st.text()}`, { providerJobId: request_id });
     const { status } = (await st.json()) as { status?: string };
     if (status === "COMPLETED") {
-      const res = await fetch(`${FAL_QUEUE}/${endpoint}/requests/${request_id}`, { headers });
+      const res = await fetch(responseUrl, { headers });
       if (!res.ok) throw new ProviderJobError(`fal result failed: ${await res.text()}`, { providerJobId: request_id });
       return { requestId: request_id, data: (await res.json()) as Rec };
     }
