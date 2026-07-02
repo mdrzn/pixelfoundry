@@ -7,6 +7,7 @@ import { promisify } from "node:util";
 import { AssetType } from "@prisma/client";
 
 import { audioMerge } from "@/lib/pipeline/audio-merge";
+import { audioTrim } from "@/lib/pipeline/audio-trim";
 import {
   extractFalAssets,
   runFalImageJob,
@@ -248,6 +249,7 @@ const RUNNERS: Record<string, StepRunner> = {
   tts,
   "voice-clone": voiceClone,
   "audio-merge": audioMerge,
+  "trim-audio": audioTrim,
   music: makeAssetRunner(AssetType.AUDIO, "music"),
   "image-edit": makeAssetRunner(AssetType.IMAGE, "image-edit"),
   "trim-video": makeAssetRunner(AssetType.VIDEO, "trim-video"),

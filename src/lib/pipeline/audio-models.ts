@@ -27,3 +27,16 @@ export const SCENE_BUILDER_MODEL_SLUGS = {
   script: "fal-ai/any-llm",
   imageEdit: "fal-ai/bytedance/seedream/v5/lite/edit",
 } as const;
+
+/**
+ * Slug-resolved models for the Podcast studio. `script`, `tts`, and `stt` reuse
+ * established fal slugs; `lipsync` is a placeholder fal slug seeded in P5-5
+ * (adjust once the real lip-sync endpoint is confirmed). The image model is
+ * resolved by job type at submit time.
+ */
+export const PODCAST_MODEL_SLUGS = {
+  script: "fal-ai/any-llm",
+  tts: "fal-ai/minimax/speech-2.6-hd",
+  stt: "fal-ai/elevenlabs/speech-to-text",
+  lipsync: "fal-ai/creatify/aurora",
+} as const;

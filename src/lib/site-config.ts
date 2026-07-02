@@ -23,6 +23,7 @@ export const dashboardNav = {
     { name: "Voice-over", href: "/dashboard/voiceover" },
     { name: "Shorts", href: "/dashboard/shorts" },
     { name: "Scene Builder", href: "/dashboard/scene-builder" },
+    { name: "Podcast", href: "/dashboard/podcast" },
     { name: "Canvas", href: "/dashboard/canvas" },
     { name: "My Library", href: "/dashboard/library" },
     { name: "Billing & Credits", href: "/dashboard/billing" },
