@@ -6,7 +6,13 @@ import { promisify } from "node:util";
 
 import { AssetType } from "@prisma/client";
 
-import { runFalImageJob, runFalStep, runFalVideoJob } from "@/lib/providers/fal";
+import {
+  extractFalAssets,
+  runFalImageJob,
+  runFalModelStep,
+  runFalStep,
+  runFalVideoJob,
+} from "@/lib/providers/fal";
 import type { ProviderModelInfo, ProviderRunAsset } from "@/lib/providers/types";
 import { storage } from "@/lib/storage";
 import { persistBytesToStorage } from "@/lib/storage/persist";
@@ -155,7 +161,71 @@ const merge: StepRunner = async (resolvedInput, _providerModelId, ctx) => {
   }
 };
 
-const RUNNERS: Record<string, StepRunner> = { llm, image, video, merge };
+export type SttWord = { text: string; start: number; end: number; speaker_id?: string };
+export type SttResult = { text: string; words: SttWord[] };
+
+/**
+ * Normalize fal ElevenLabs STT responses into a stable {text, words[]} shape.
+ * Defensive about the word array key (words | chunks | segments) and per-word
+ * field names (text|word, start|start_time, end|end_time, speaker_id|speaker).
+ */
+export function normalizeStt(data: Record<string, unknown>): SttResult {
+  const text = typeof data.text === "string" ? data.text : "";
+  const raw =
+    (Array.isArray(data.words) && data.words) ||
+    (Array.isArray(data.chunks) && data.chunks) ||
+    (Array.isArray(data.segments) && data.segments) ||
+    [];
+  const words: SttWord[] = (raw as Record<string, unknown>[]).map((w) => ({
+    text: (w.text ?? w.word ?? "") as string,
+    start: Number(w.start ?? w.start_time ?? 0),
+    end: Number(w.end ?? w.end_time ?? 0),
+    speaker_id: (w.speaker_id ?? w.speaker) as string | undefined,
+  }));
+  return { text, words };
+}
+
+/** Pull a voice id out of a voice-clone response; throws if none present. */
+export function extractVoiceId(data: Record<string, unknown>): string {
+  const id = data.voice_id ?? data.custom_voice_id ?? data.id;
+  if (typeof id !== "string" || !id) {
+    throw new Error("extractVoiceId: response had no voice_id/custom_voice_id/id");
+  }
+  return id;
+}
+
+const stt: StepRunner = async (resolvedInput, providerModelId, ctx) => {
+  if (!providerModelId) throw new Error("stt runner: missing providerModelId");
+  const model = await ctx.getModel(providerModelId);
+  const { data } = await runFalModelStep(model, resolvedInput);
+  return { data: normalizeStt(data) };
+};
+
+const voiceClone: StepRunner = async (resolvedInput, providerModelId, ctx) => {
+  if (!providerModelId) throw new Error("voice-clone runner: missing providerModelId");
+  const model = await ctx.getModel(providerModelId);
+  const { data } = await runFalModelStep(model, resolvedInput);
+  return { data: { voice_id: extractVoiceId(data) } };
+};
+
+const tts: StepRunner = async (resolvedInput, providerModelId, ctx) => {
+  if (!providerModelId) throw new Error("tts runner: missing providerModelId");
+  const model = await ctx.getModel(providerModelId);
+  const { data } = await runFalModelStep(model, resolvedInput);
+  const assets = extractFalAssets(data, AssetType.AUDIO);
+  if (!assets.length) throw new Error("tts runner: fal returned no audio outputs");
+  return { asset: assets[0] };
+};
+
+const RUNNERS: Record<string, StepRunner> = {
+  llm,
+  image,
+  video,
+  merge,
+  stt,
+  tts,
+  "voice-clone": voiceClone,
+};
 
 export function getRunner(stepType: string): StepRunner {
   const r = RUNNERS[stepType];

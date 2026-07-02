@@ -6,6 +6,7 @@ import {
   VideoJobInput,
   ProviderJobError,
   ProviderJobOptions,
+  ProviderModelInfo,
   ProviderRunAsset,
   ProviderRunResult,
 } from "@/lib/providers/types";
@@ -92,6 +93,20 @@ function falMeta(model: ProviderJobOptions<unknown>["model"]): FalModelMeta {
     inputMap: fal.inputMap as Record<string, string> | undefined,
     staticInputs: fal.staticInputs as Rec | undefined,
   };
+}
+
+/**
+ * Run a model's configured fal endpoint and return the RAW response data (no
+ * asset extraction), so data-returning steps (stt, voice-clone) can normalize
+ * it themselves. Reuses the internal falMeta + buildFalInput helpers.
+ */
+export async function runFalModelStep(
+  model: ProviderModelInfo,
+  input: Rec,
+): Promise<{ requestId: string; data: Rec }> {
+  const meta = falMeta(model);
+  const built = buildFalInput(input, meta.inputMap ?? {}, meta.staticInputs ?? {});
+  return runFalStep(meta.falEndpoint, built);
 }
 
 export async function runFalImageJob(options: ProviderJobOptions<ImageJobInput>): Promise<ProviderRunResult> {
