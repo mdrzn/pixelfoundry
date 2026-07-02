@@ -28,6 +28,7 @@ export const dashboardNav = {
     { name: "Transcribe", href: "/dashboard/transcribe" },
     { name: "Translate Image", href: "/dashboard/translate-image" },
     { name: "Subtitles", href: "/dashboard/subtitles" },
+    { name: "Dubbing", href: "/dashboard/dubbing" },
     { name: "Canvas", href: "/dashboard/canvas" },
     { name: "My Library", href: "/dashboard/library" },
     { name: "Billing & Credits", href: "/dashboard/billing" },

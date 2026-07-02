@@ -6,6 +6,7 @@ import { promisify } from "node:util";
 
 import { AssetType } from "@prisma/client";
 
+import { audioExtract } from "@/lib/pipeline/audio-extract";
 import { audioMerge } from "@/lib/pipeline/audio-merge";
 import { audioTrim } from "@/lib/pipeline/audio-trim";
 import {
@@ -250,6 +251,7 @@ const RUNNERS: Record<string, StepRunner> = {
   "voice-clone": voiceClone,
   "audio-merge": audioMerge,
   "trim-audio": audioTrim,
+  "extract-audio": audioExtract,
   music: makeAssetRunner(AssetType.AUDIO, "music"),
   "image-edit": makeAssetRunner(AssetType.IMAGE, "image-edit"),
   "trim-video": makeAssetRunner(AssetType.VIDEO, "trim-video"),
