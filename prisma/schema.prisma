@@ -28,6 +28,7 @@ model User {
   providerCredentialsUpdated ProviderCredential[] @relation("ProviderCredentialUpdatedBy")
   imagePresets   ImagePreset[]
   canvases       Canvas[]
+  pipelines      Pipeline[]
 }
 
 model Account {
@@ -76,8 +77,11 @@ model CreditLedger {
   metadata     Json?
   createdAt    DateTime      @default(now())
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  job  Job? @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  pipelineId   String?
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  job      Job?      @relation(fields: [jobId], references: [id], onDelete: SetNull)
+  pipeline Pipeline? @relation(fields: [pipelineId], references: [id], onDelete: SetNull)
 
   @@index([userId])
   @@index([jobId])
@@ -137,6 +141,8 @@ model Asset {
   jobOutput Job[]    @relation("JobOutputAsset")
   presetReferences ImagePresetReference[]
   jobInputUsages   JobInputAsset[]
+  pipelineOutputs  Pipeline[]     @relation("PipelineOutputAsset")
+  stepOutputs      PipelineStep[] @relation("StepOutputAsset")
 
   @@index([userId])
   @@index([userId, type, createdAt])
@@ -308,4 +314,84 @@ model Canvas {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+enum PipelineType {
+  MULTI_SHOT
+  SHORTS
+  PODCAST
+  SCENE_BUILDER
+  DUBBING
+  DUBBING_LIPSYNC
+  VOICEOVER
+  SUBTITLES
+}
+
+enum PipelineStatus {
+  QUEUED
+  RUNNING
+  PARTIAL
+  COMPLETED
+  FAILED
+  CANCELED
+}
+
+enum StepStatus {
+  PENDING
+  RUNNING
+  DONE
+  FAILED
+  SKIPPED
+}
+
+model Pipeline {
+  id            String         @id @default(cuid())
+  userId        String
+  type          PipelineType
+  status        PipelineStatus @default(QUEUED)
+  params        Json           @default("{}")
+  estimatedCost Int            @default(0)
+  heldCost      Int            @default(0)
+  actualCost    Int            @default(0)
+  progress      Int            @default(0)
+  outputAssetId String?
+  error         String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  completedAt   DateTime?
+
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  outputAsset   Asset?         @relation("PipelineOutputAsset", fields: [outputAssetId], references: [id], onDelete: SetNull)
+  steps         PipelineStep[]
+  creditEntries CreditLedger[]
+
+  @@index([userId])
+  @@index([status])
+}
+
+model PipelineStep {
+  id              String     @id @default(cuid())
+  pipelineId      String
+  key             String
+  name            String
+  stepType        String
+  status          StepStatus @default(PENDING)
+  dependsOn       String[]   @default([])
+  input           Json       @default("{}")
+  output          Json?
+  outputAssetId   String?
+  providerModelId String?
+  cost            Int        @default(0)
+  attempts        Int        @default(0)
+  error           String?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+  startedAt       DateTime?
+  finishedAt      DateTime?
+
+  pipeline    Pipeline @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+  outputAsset Asset?   @relation("StepOutputAsset", fields: [outputAssetId], references: [id], onDelete: SetNull)
+
+  @@unique([pipelineId, key])
+  @@index([pipelineId])
 }
