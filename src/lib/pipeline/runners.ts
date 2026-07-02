@@ -224,6 +224,21 @@ const tts: StepRunner = async (resolvedInput, providerModelId, ctx) => {
   return { asset: assets[0] };
 };
 
+/**
+ * Build a StepRunner for the common "run a fal model, extract one asset of a
+ * fixed type" shape shared by many studio steps. Differs only by AssetType.
+ */
+function makeAssetRunner(assetType: AssetType, label: string): StepRunner {
+  return async (resolvedInput, providerModelId, ctx) => {
+    if (!providerModelId) throw new Error(`${label} step requires a providerModelId`);
+    const model = await ctx.getModel(providerModelId);
+    const { data } = await runFalModelStep(model, resolvedInput as Record<string, unknown>);
+    const assets = extractFalAssets(data, assetType);
+    if (!assets.length) throw new Error(`${label}: fal returned no ${assetType} output`);
+    return { asset: assets[0] };
+  };
+}
+
 const RUNNERS: Record<string, StepRunner> = {
   llm,
   image,
@@ -233,6 +248,12 @@ const RUNNERS: Record<string, StepRunner> = {
   tts,
   "voice-clone": voiceClone,
   "audio-merge": audioMerge,
+  music: makeAssetRunner(AssetType.AUDIO, "music"),
+  "image-edit": makeAssetRunner(AssetType.IMAGE, "image-edit"),
+  "trim-video": makeAssetRunner(AssetType.VIDEO, "trim-video"),
+  "mux-audio": makeAssetRunner(AssetType.VIDEO, "mux-audio"),
+  "auto-subtitle": makeAssetRunner(AssetType.VIDEO, "auto-subtitle"),
+  lipsync: makeAssetRunner(AssetType.VIDEO, "lipsync"),
 };
 
 export function getRunner(stepType: string): StepRunner {
