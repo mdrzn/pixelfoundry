@@ -14,7 +14,7 @@ function getPath(obj: unknown, path: string): unknown {
 }
 
 function isRefToken(v: unknown): v is Record<string, unknown> {
-  return !!v && typeof v === "object" && !Array.isArray(v) && ("$data" in v || "$asset" in v);
+  return !!v && typeof v === "object" && !Array.isArray(v) && ("$data" in v || "$asset" in v || "$assetId" in v);
 }
 
 export function resolveInput(input: unknown, outputsByKey: Record<string, StepOutput>): unknown {
@@ -25,6 +25,12 @@ export function resolveInput(input: unknown, outputsByKey: Record<string, StepOu
       const out = outputsByKey[key];
       if (!out || out.assetUrl === undefined) throw new Error(`No asset output for step "${key}"`);
       return out.assetUrl;
+    }
+    if ("$assetId" in input) {
+      const key = String(input.$assetId);
+      const out = outputsByKey[key];
+      if (!out || out.assetId === undefined) throw new Error(`No assetId output for step "${key}"`);
+      return out.assetId;
     }
     const key = String(input.$data);
     const out = outputsByKey[key];

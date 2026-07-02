@@ -31,4 +31,10 @@ describe("resolveInput", () => {
   it("throws on an unnavigable $data path", () => {
     expect(() => resolveInput({ x: { $data: "shots", path: "shots[99].prompt" } }, outputs)).toThrow();
   });
+  it("resolves a $assetId ref to the assetId", () => {
+    expect(resolveInput({ id: { $assetId: "shot:1:image" } }, outputs)).toEqual({ id: "a1" });
+  });
+  it("throws when $assetId step has no assetId", () => {
+    expect(() => resolveInput({ x: { $assetId: "shots" } }, outputs)).toThrow();
+  });
 });
