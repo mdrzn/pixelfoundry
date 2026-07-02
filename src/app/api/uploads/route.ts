@@ -5,6 +5,8 @@ import { AssetType } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
+import { storage } from "@/lib/storage";
+import { persistBytesToStorage } from "@/lib/storage/persist";
 
 export const runtime = "nodejs";
 
@@ -69,16 +71,12 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const base64 = buffer.toString("base64");
-  const dataUrl = `data:${mimeType};base64,${base64}`;
-
   const asset = await prisma.asset.create({
     data: {
       userId: session.user.id,
       type: AssetType.IMAGE,
       title: file.name.slice(0, 80),
-      url: dataUrl,
-      thumbnail: dataUrl,
+      url: "",
       metadata: {
         upload: {
           originalName: file.name,
@@ -89,12 +87,30 @@ export async function POST(request: NextRequest) {
     },
   });
 
-  return NextResponse.json({
+  const persisted = await persistBytesToStorage(storage, {
+    kind: "upload",
     id: asset.id,
-    title: asset.title,
-    url: asset.url,
-    thumbnail: asset.thumbnail ?? asset.url,
-    createdAt: asset.createdAt.toISOString(),
+    data: buffer,
+    contentType: mimeType,
+  });
+
+  const updated = await prisma.asset.update({
+    where: { id: asset.id },
+    data: {
+      url: persisted.url,
+      thumbnail: persisted.url,
+      storageKey: persisted.storageKey,
+      mimeType: persisted.mimeType,
+      sizeBytes: persisted.sizeBytes,
+    },
+  });
+
+  return NextResponse.json({
+    id: updated.id,
+    title: updated.title,
+    url: updated.url,
+    thumbnail: updated.thumbnail ?? updated.url,
+    createdAt: updated.createdAt.toISOString(),
     mimeType,
   });
 }

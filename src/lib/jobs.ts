@@ -1,6 +1,8 @@
 import { CreditReason, JobAssetRole, JobProvider, JobStatus, JobType, Provider, Prisma } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
+import { storage } from "@/lib/storage";
+import { persistUrlToStorage } from "@/lib/storage/persist";
 import { runEditImageJob, runImageJob, runVideoJob } from "@/lib/providers";
 import {
   EditImageJobInput as ProviderEditImageInput,
@@ -168,29 +170,6 @@ async function markJobFailed({
   });
 }
 
-async function persistExternalUrl(url: string): Promise<string> {
-  // Already a data URL (OpenAI, Gemini, uploads) — nothing to do
-  if (url.startsWith("data:")) {
-    return url;
-  }
-
-  try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      console.warn(`Failed to persist external URL (${response.status}): ${url}`);
-      return url; // Fall back to the original URL
-    }
-
-    const contentType = response.headers.get("content-type") ?? "image/png";
-    const buffer = Buffer.from(await response.arrayBuffer());
-    const base64 = buffer.toString("base64");
-    return `data:${contentType};base64,${base64}`;
-  } catch (error) {
-    console.warn("Failed to persist external URL:", url, error);
-    return url; // Fall back to the original URL
-  }
-}
-
 async function finalizeProviderJob({
   jobId,
   userId,
@@ -204,25 +183,25 @@ async function finalizeProviderJob({
     throw new Error("Provider returned no outputs.");
   }
 
-  const primaryAsset = result.assets[0];
-
-  // Download external URLs (e.g. Replicate CDN) and convert to data URLs
-  // so they're persisted in the database and don't expire.
-  const persistedUrl = await persistExternalUrl(primaryAsset.url);
-  const persistedThumbnail = primaryAsset.thumbnail
-    ? await persistExternalUrl(primaryAsset.thumbnail)
-    : persistedUrl;
+  const primary = result.assets[0];
 
   const asset = await prisma.asset.create({
     data: {
       userId,
-      type: primaryAsset.type,
-      url: persistedUrl,
-      thumbnail: persistedThumbnail,
-      metadata: primaryAsset.metadata
-        ? (primaryAsset.metadata as Prisma.InputJsonValue)
-        : undefined,
+      type: primary.type,
+      url: primary.url, // replaced below once stored
+      thumbnail: primary.thumbnail ?? primary.url,
+      metadata: primary.metadata ? (primary.metadata as Prisma.InputJsonValue) : undefined,
     },
+  });
+
+  const persisted = await persistUrlToStorage(storage, { kind: "asset", id: asset.id, url: primary.url });
+
+  await prisma.asset.update({
+    where: { id: asset.id },
+    data: persisted
+      ? { url: persisted.url, thumbnail: persisted.url, storageKey: persisted.storageKey, mimeType: persisted.mimeType, sizeBytes: persisted.sizeBytes }
+      : {},
   });
 
   await prisma.job.update({
