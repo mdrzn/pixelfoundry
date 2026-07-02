@@ -6,6 +6,7 @@ import { promisify } from "node:util";
 
 import { AssetType } from "@prisma/client";
 
+import { audioMerge } from "@/lib/pipeline/audio-merge";
 import {
   extractFalAssets,
   runFalImageJob,
@@ -225,6 +226,7 @@ const RUNNERS: Record<string, StepRunner> = {
   stt,
   tts,
   "voice-clone": voiceClone,
+  "audio-merge": audioMerge,
 };
 
 export function getRunner(stepType: string): StepRunner {
