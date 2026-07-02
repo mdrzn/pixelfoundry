@@ -38,6 +38,12 @@ export default function RootLayout({
           geistMono.variable,
         )}
       >
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "(function(){try{var t=localStorage.getItem('theme');var d=t? t==='dark' : matchMedia('(prefers-color-scheme: dark)').matches; if(d)document.documentElement.classList.add('dark');}catch(e){}})();",
+          }}
+        />
         <SessionProvider>{children}</SessionProvider>
       </body>
     </html>

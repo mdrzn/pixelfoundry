@@ -36,6 +36,7 @@ import {
 } from "@/components/ui/sidebar";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 type DashboardUser = {
   id: string;
@@ -182,6 +183,7 @@ export function DashboardSidebar({
               <span className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
                 {user.credits} credits
               </span>
+              <ThemeToggle />
               <SidebarTrigger className="md:hidden" />
             </div>
           </header>
