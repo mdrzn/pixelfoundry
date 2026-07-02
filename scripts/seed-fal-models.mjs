@@ -82,6 +82,57 @@ const FAL_MODELS = [
       },
     },
   },
+  // --- Studio step models (Phase 5). Resolved by SLUG. All fal endpoints/inputMaps
+  // are BEST-EFFORT placeholders and MUST be validated against the live fal API
+  // before any paid run. (mux/subtitle may later move to local ffmpeg — follow-up.)
+  {
+    slug: "fal-ai/any-llm",
+    displayName: "Any LLM (fal)",
+    description: "fal.ai LLM router for script/analysis steps.",
+    jobTypes: [],
+    creditCost: 1,
+    metadata: { fal: { falEndpoint: "fal-ai/any-llm", inputMap: { prompt: "prompt" } } },
+  },
+  {
+    slug: "fal-ai/minimax-music",
+    displayName: "MiniMax Music (fal)",
+    description: "fal.ai music generation for Shorts.",
+    jobTypes: [],
+    creditCost: 4,
+    metadata: { fal: { falEndpoint: "fal-ai/minimax-music", inputMap: { prompt: "prompt" } } },
+  },
+  {
+    slug: "fal-ai/auto-subtitle",
+    displayName: "Auto Subtitle (fal)",
+    description: "fal.ai auto-subtitle burn-in for Shorts.",
+    jobTypes: [],
+    creditCost: 3,
+    metadata: { fal: { falEndpoint: "fal-ai/auto-subtitle", inputMap: { video_url: "video_url" } } },
+  },
+  {
+    slug: "fal-ai/ffmpeg-api/mux-audio",
+    displayName: "Mux Audio (fal)",
+    description: "fal.ai mux audio into video (Shorts/Podcast).",
+    jobTypes: [],
+    creditCost: 1,
+    metadata: { fal: { falEndpoint: "fal-ai/ffmpeg-api/mux-audio", inputMap: { video_url: "video_url", audio_url: "audio_url" } } },
+  },
+  {
+    slug: "fal-ai/bytedance/seedream/v5/lite/edit",
+    displayName: "Seedream Edit (fal, i2i)",
+    description: "fal.ai reference-guided image edit for Scene Builder keyframes.",
+    jobTypes: [],
+    creditCost: 8,
+    metadata: { fal: { falEndpoint: "fal-ai/bytedance/seedream/v5/lite/edit", inputMap: { prompt: "prompt", image_urls: "image_urls" } } },
+  },
+  {
+    slug: "fal-ai/creatify/aurora",
+    displayName: "Creatify Aurora Lipsync (fal)",
+    description: "fal.ai lipsync (portrait + audio) for Podcast.",
+    jobTypes: [],
+    creditCost: 30,
+    metadata: { fal: { falEndpoint: "fal-ai/creatify/aurora", inputMap: { image_url: "image_url", audio_url: "audio_url" } } },
+  },
 ];
 
 async function main() {
