@@ -28,6 +28,8 @@ export type ExecutorPort = {
     type: PipelineType;
     params: Record<string, unknown>;
     heldCost: number;
+    /** Current status; used to short-circuit re-invocation on terminal pipelines. */
+    status?: PipelineStatus;
   } | null>;
   loadSteps(pipelineId: string): Promise<ExecStep[]>;
   /** upsert a planned step (PENDING) by (pipelineId,key); ignore if key already exists */
@@ -57,9 +59,21 @@ export type ExecutorPort = {
     userId: string,
     asset: ProviderRunAsset,
   ): Promise<{ assetId: string; assetUrl: string }>;
+  /**
+   * Refund unused held credits at reconciliation. The real port MUST make this
+   * idempotent per pipeline (e.g. keyed on pipelineId), so a duplicate/retried
+   * invocation cannot refund twice — enforced when the DB port lands.
+   */
   refund(userId: string, pipelineId: string, amount: number): Promise<void>;
   cost(stepType: string, providerModelId?: string | null): number;
 };
+
+const TERMINAL_STATUSES: readonly PipelineStatus[] = [
+  PipelineStatus.COMPLETED,
+  PipelineStatus.PARTIAL,
+  PipelineStatus.FAILED,
+  PipelineStatus.CANCELED,
+];
 
 const CONCURRENCY = 4;
 
@@ -78,15 +92,32 @@ function chunk<T>(items: T[], size: number): T[][] {
 export async function runPipeline(pipelineId: string, port: ExecutorPort): Promise<void> {
   const pipeline = await port.loadPipeline(pipelineId);
   if (!pipeline) throw new Error(`runPipeline: no pipeline with id ${pipelineId}`);
+
+  // C1: guard against re-invocation on an already-terminal pipeline (BullMQ
+  // at-least-once delivery / worker restarts). Re-running would refund again.
+  if (pipeline.status !== undefined && TERMINAL_STATUSES.includes(pipeline.status)) {
+    return;
+  }
+
   const { userId, type, params, heldCost } = pipeline;
 
   await port.setPipeline(pipelineId, { status: PipelineStatus.RUNNING });
 
   const definition = getDefinition(type);
 
+  // C2: reset any steps left RUNNING by a crashed worker back to PENDING.
+  // They were never persisted/charged (DONE + persistAsset happen atomically
+  // from the executor's view), so re-running them is safe.
+  const initialSteps = await port.loadSteps(pipelineId);
+  for (const s of initialSteps) {
+    if (s.status === StepStatus.RUNNING) {
+      await port.patchStep(s.id, { status: StepStatus.PENDING });
+      s.status = StepStatus.PENDING; // reflect in local view
+    }
+  }
+
   // Seed ref-resolution map from steps already DONE (so RESUME works).
   const outputsByKey: Record<string, StepOutput> = {};
-  const initialSteps = await port.loadSteps(pipelineId);
   for (const s of initialSteps) {
     if (s.status === StepStatus.DONE) {
       outputsByKey[s.key] = {
@@ -119,9 +150,13 @@ export async function runPipeline(pipelineId: string, port: ExecutorPort): Promi
     for (const batch of chunk(runnable, CONCURRENCY)) {
       await Promise.all(
         batch.map(async (step) => {
-          const now = new Date();
-          await port.patchStep(step.id, { status: StepStatus.RUNNING, startedAt: now });
+          // I1: the ENTIRE per-step body is inside try/catch. A transient infra
+          // error in any port call (patchStep/persistAsset/…) must not reject the
+          // Promise.all and strand sibling steps — it fails just this step.
           try {
+            const now = new Date();
+            await port.patchStep(step.id, { status: StepStatus.RUNNING, startedAt: now });
+
             const resolved = resolveInput(step.input, outputsByKey) as Record<string, unknown>;
             const result = await port.runStep(step, resolved);
 
@@ -152,20 +187,30 @@ export async function runPipeline(pipelineId: string, port: ExecutorPort): Promi
             );
             for (const ps of planned) await port.addStep(pipelineId, ps);
           } catch (err) {
-            await port.patchStep(step.id, {
-              status: StepStatus.FAILED,
-              error: errMessage(err),
-              attempts: step.attempts + 1,
-              finishedAt: new Date(),
-            });
             failed = true;
+            // Best-effort mark FAILED; guarded so a failing patch can't reject Promise.all.
+            try {
+              await port.patchStep(step.id, {
+                status: StepStatus.FAILED,
+                error: errMessage(err),
+                attempts: step.attempts + 1,
+                finishedAt: new Date(),
+              });
+            } catch {
+              // swallow — nothing more we can do; finalize will treat it as leftover/failed.
+            }
           }
-
-          // Recompute progress from a fresh read after each step resolves.
-          const fresh = await port.loadSteps(pipelineId);
-          await port.setPipeline(pipelineId, { progress: progressFor(fresh) });
         }),
       );
+
+      // I4: recompute progress ONCE after the chunk settles (monotonic; avoids
+      // concurrent writes racing as expand() grows the total).
+      try {
+        const fresh = await port.loadSteps(pipelineId);
+        await port.setPipeline(pipelineId, { progress: progressFor(fresh) });
+      } catch {
+        // progress is advisory; ignore transient failures.
+      }
     }
 
     // A failure halts scheduling of further steps.
@@ -176,19 +221,37 @@ export async function runPipeline(pipelineId: string, port: ExecutorPort): Promi
   const finalSteps = await port.loadSteps(pipelineId);
   const done = finalSteps.filter((s) => s.status === StepStatus.DONE);
   const failedSteps = finalSteps.filter((s) => s.status === StepStatus.FAILED);
+  // C3: steps still PENDING/RUNNING at loop exit mean the graph is stuck
+  // (blocked by a failed/skipped dependency) — NOT successfully complete.
+  const leftover = finalSteps.filter(
+    (s) => s.status === StepStatus.PENDING || s.status === StepStatus.RUNNING,
+  );
+
+  // I2: definition contract — sum(cost of DONE steps) must be <= estimateUpperBound
+  // (the held estimate). If it isn't, we still refund what we can, but flag it.
   const actualCost = done.reduce((a, s) => a + s.cost, 0);
+  if (actualCost > heldCost) {
+    console.warn("[pipeline] actualCost exceeded held estimate", {
+      pipelineId,
+      heldCost,
+      actualCost,
+    });
+  }
 
   const refundAmount = Math.max(0, heldCost - actualCost);
   if (refundAmount > 0) await port.refund(userId, pipelineId, refundAmount);
 
   const now = new Date();
 
-  if (failedSteps.length > 0) {
+  if (failedSteps.length > 0 || leftover.length > 0) {
     const status = done.length > 0 ? PipelineStatus.PARTIAL : PipelineStatus.FAILED;
+    const error =
+      failedSteps[0]?.error ??
+      `pipeline did not complete: ${leftover.length} step(s) unresolved`;
     await port.setPipeline(pipelineId, {
       status,
       actualCost,
-      error: failedSteps[0].error ?? "Pipeline step failed",
+      error,
       progress: progressFor(finalSteps),
       completedAt: now,
     });

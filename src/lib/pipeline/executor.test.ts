@@ -17,6 +17,8 @@ type FakeOpts = {
   seedSteps: ExecStep[];
   runStep: RunStepFn;
   cost: (stepType: string, providerModelId?: string | null) => number;
+  /** optional: throw from patchStep to simulate a transient DB error */
+  onPatchStep?: (step: ExecStep, patch: Partial<ExecStep>) => void;
 };
 
 type FakePort = ExecutorPort & {
@@ -67,6 +69,7 @@ function makeFakePort(opts: FakeOpts): FakePort {
         type: pipeline.type,
         params: pipeline.params,
         heldCost: pipeline.heldCost,
+        status: pipeline.status,
       };
     },
 
@@ -95,6 +98,7 @@ function makeFakePort(opts: FakeOpts): FakePort {
       const existing = [...steps.values()].find((s) => s.id === stepId);
       if (!existing) throw new Error(`patchStep: no step with id ${stepId}`);
       const { startedAt: _st, finishedAt: _fi, ...rest } = patch;
+      if (opts.onPatchStep) opts.onPatchStep(existing, rest); // may throw
       Object.assign(existing, rest);
     },
 
@@ -294,5 +298,128 @@ describe("runPipeline", () => {
     expect(port.pipeline.status).toBe(PipelineStatus.COMPLETED);
     // only B charged this run (A was already accounted): actualCost = done sum = 30, refund = 50-30
     expect(port.refunds).toEqual([{ userId: "user-1", pipelineId: "pipe-1", amount: 50 - 30 }]);
+  });
+
+  it("scenario 5: re-invocation on COMPLETED is a no-op (single refund, no re-run)", async () => {
+    const port = makeFakePort({
+      type: PipelineType.MULTI_SHOT,
+      heldCost: 100,
+      seedSteps: [
+        pending({ id: "s-a", key: "A", stepType: "step", cost: 10, dependsOn: [] }),
+        pending({ id: "s-b", key: "B", stepType: "step", cost: 20, dependsOn: ["A"] }),
+      ],
+      cost: () => 0,
+      async runStep(step) {
+        return { data: { from: step.key } };
+      },
+    });
+
+    await runPipeline("pipe-1", port);
+    expect(port.pipeline.status).toBe(PipelineStatus.COMPLETED);
+    expect(port.refunds).toHaveLength(1);
+    const runCountAfterFirst = port.runOrder.length;
+
+    // Second invocation (duplicate delivery) on the now-terminal pipeline.
+    await runPipeline("pipe-1", port);
+
+    expect(port.refunds).toHaveLength(1); // NOT refunded twice
+    expect(port.runOrder.length).toBe(runCountAfterFirst); // no step re-ran
+  });
+
+  it("scenario 6: orphaned RUNNING step is reset and re-run on resume", async () => {
+    const port = makeFakePort({
+      type: PipelineType.MULTI_SHOT,
+      heldCost: 100,
+      seedSteps: [
+        // A left RUNNING by a crashed worker: no output persisted.
+        pending({
+          id: "s-a",
+          key: "A",
+          stepType: "step",
+          cost: 10,
+          dependsOn: [],
+          status: StepStatus.RUNNING,
+        }),
+        pending({
+          id: "s-b",
+          key: "B",
+          stepType: "step",
+          cost: 20,
+          dependsOn: ["A"],
+          input: { fromA: { $data: "A", path: "value" } },
+        }),
+      ],
+      cost: () => 0,
+      async runStep(step, resolved) {
+        if (step.key === "A") return { data: { value: 7 } };
+        return { data: { received: resolved } };
+      },
+    });
+
+    await runPipeline("pipe-1", port);
+
+    expect(port.ranKeys.has("A")).toBe(true); // reset + re-run
+    expect(port.getStep("A")!.status).toBe(StepStatus.DONE);
+    expect(port.runOrder).toEqual(["A", "B"]); // downstream ran after
+    expect((port.getStep("B")!.output as { received: Record<string, unknown> }).received).toEqual({
+      fromA: 7,
+    });
+    expect(port.pipeline.status).toBe(PipelineStatus.COMPLETED);
+  });
+
+  it("scenario 7: stuck via failed dep is FAILED, never COMPLETED", async () => {
+    const port = makeFakePort({
+      type: PipelineType.MULTI_SHOT,
+      heldCost: 100,
+      seedSteps: [
+        pending({ id: "s-a", key: "A", stepType: "step", cost: 10, dependsOn: [] }),
+        pending({ id: "s-b", key: "B", stepType: "step", cost: 20, dependsOn: ["A"] }),
+      ],
+      cost: () => 0,
+      async runStep(step) {
+        if (step.key === "A") throw new Error("A-explodes");
+        return { data: { from: step.key } };
+      },
+    });
+
+    await runPipeline("pipe-1", port);
+
+    expect(port.getStep("A")!.status).toBe(StepStatus.FAILED);
+    expect(port.ranKeys.has("B")).toBe(false); // B never runs
+    expect(port.getStep("B")!.status).toBe(StepStatus.PENDING); // stays PENDING
+    // no DONE steps → FAILED, not COMPLETED, not PARTIAL
+    expect(port.pipeline.status).toBe(PipelineStatus.FAILED);
+  });
+
+  it("scenario 8: port throws on a DONE patch — step FAILED, siblings finish, no reject", async () => {
+    let thrownOnce = false;
+    const port = makeFakePort({
+      type: PipelineType.MULTI_SHOT,
+      heldCost: 100,
+      seedSteps: [
+        pending({ id: "s-a", key: "A", stepType: "step", cost: 10, dependsOn: [] }),
+        pending({ id: "s-b", key: "B", stepType: "step", cost: 20, dependsOn: [] }),
+      ],
+      cost: () => 0,
+      async runStep(step) {
+        return { data: { from: step.key } };
+      },
+      onPatchStep(step, patch) {
+        // Throw exactly once, on A's DONE patch (transient DB error).
+        if (step.key === "A" && patch.status === StepStatus.DONE && !thrownOnce) {
+          thrownOnce = true;
+          throw new Error("transient-db-error");
+        }
+      },
+    });
+
+    // Must not reject.
+    await expect(runPipeline("pipe-1", port)).resolves.toBeUndefined();
+
+    expect(port.getStep("A")!.status).toBe(StepStatus.FAILED);
+    expect(port.getStep("A")!.error).toContain("transient-db-error");
+    expect(port.getStep("B")!.status).toBe(StepStatus.DONE); // sibling still completed
+    // one done → PARTIAL
+    expect(port.pipeline.status).toBe(PipelineStatus.PARTIAL);
   });
 });
