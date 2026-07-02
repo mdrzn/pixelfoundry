@@ -124,6 +124,15 @@ model Asset {
   metadata  Json?
   createdAt DateTime @default(now())
 
+  // storage rework (Phase 0)
+  storageKey String?
+  mimeType   String?
+  sizeBytes  Int?
+  durationMs Int?
+  posterKey  String?
+  width      Int?
+  height     Int?
+
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   jobOutput Job[]    @relation("JobOutputAsset")
   presetReferences ImagePresetReference[]
