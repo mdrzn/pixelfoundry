@@ -1,9 +1,11 @@
 import { PipelineType } from "@prisma/client";
 import type { PipelineDefinition } from "../types";
 import { multiShotDefinition } from "./multi-shot";
+import { voiceoverDefinition } from "./voiceover";
 
 const REGISTRY: Partial<Record<PipelineType, PipelineDefinition>> = {
   [PipelineType.MULTI_SHOT]: multiShotDefinition,
+  [PipelineType.VOICEOVER]: voiceoverDefinition,
 };
 
 export function getDefinition(type: PipelineType): PipelineDefinition {

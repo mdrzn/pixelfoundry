@@ -70,8 +70,14 @@ export function extractJson(text: string): unknown {
 }
 
 const llm: StepRunner = async (resolvedInput) => {
-  const prompt = resolvedInput.prompt;
-  if (typeof prompt !== "string") throw new Error("llm runner: resolvedInput.prompt must be a string");
+  const base = resolvedInput.prompt;
+  if (typeof base !== "string") throw new Error("llm runner: resolvedInput.prompt must be a string");
+  // Optional context (e.g. a runtime transcript) is appended as serialized JSON
+  // so the prompt itself stays a plain string.
+  const prompt =
+    resolvedInput.context !== undefined
+      ? `${base}\n\nCONTEXT:\n${JSON.stringify(resolvedInput.context)}`
+      : base;
   const model =
     typeof resolvedInput.llmModelId === "string" && resolvedInput.llmModelId
       ? resolvedInput.llmModelId
