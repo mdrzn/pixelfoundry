@@ -21,6 +21,7 @@ export const dashboardNav = {
     { name: "Create Video", href: "/dashboard/create-video" },
     { name: "Multi-Shot", href: "/dashboard/multi-shot" },
     { name: "Voice-over", href: "/dashboard/voiceover" },
+    { name: "Shorts", href: "/dashboard/shorts" },
     { name: "Canvas", href: "/dashboard/canvas" },
     { name: "My Library", href: "/dashboard/library" },
     { name: "Billing & Credits", href: "/dashboard/billing" },

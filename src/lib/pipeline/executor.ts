@@ -258,10 +258,15 @@ export async function runPipeline(pipelineId: string, port: ExecutorPort): Promi
     return;
   }
 
-  // Success: terminal asset = a DONE "merge" step, else the last DONE step with an asset.
-  const mergeStep = done.find((s) => s.key === "merge" && s.outputAssetId);
+  // Success: terminal asset = the sink step's asset. A sink is a DONE step whose
+  // key appears in NO other step's dependsOn. If several sinks have assets, take
+  // the last (by steps-array order). Fall back to the last DONE step with an asset
+  // when no sink produced one.
+  const dependedOn = new Set<string>();
+  for (const s of finalSteps) for (const d of s.dependsOn) dependedOn.add(d);
+  const sinkAssetStep = [...done].reverse().find((s) => s.outputAssetId && !dependedOn.has(s.key));
   const lastAssetStep = [...done].reverse().find((s) => s.outputAssetId);
-  const outputAssetId = mergeStep?.outputAssetId ?? lastAssetStep?.outputAssetId ?? null;
+  const outputAssetId = sinkAssetStep?.outputAssetId ?? lastAssetStep?.outputAssetId ?? null;
 
   await port.setPipeline(pipelineId, {
     status: PipelineStatus.COMPLETED,

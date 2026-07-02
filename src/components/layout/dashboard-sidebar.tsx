@@ -17,6 +17,7 @@ import {
   LifeBuoy,
   Settings,
   ShieldCheck,
+  Sparkles,
   Workflow,
 } from "lucide-react";
 
@@ -55,6 +56,7 @@ const iconMap: Record<string, ElementType> = {
   "Create Video": FilmIcon,
   "Multi-Shot": Clapperboard,
   "Voice-over": AudioLines,
+  Shorts: Sparkles,
   "My Library": LibraryIcon,
   Canvas: Workflow,
   "Billing & Credits": BadgeDollarSign,

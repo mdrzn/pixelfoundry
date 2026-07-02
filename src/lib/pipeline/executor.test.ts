@@ -391,6 +391,33 @@ describe("runPipeline", () => {
     expect(port.pipeline.status).toBe(PipelineStatus.FAILED);
   });
 
+  it("scenario 9: terminal asset is the sink step (not a mid-graph 'merge')", async () => {
+    // A → B → C. C is the sink (nothing depends on it), keyed "final" (NOT "merge").
+    // B is keyed "merge" and also produces an asset. The output must be C's asset.
+    const port = makeFakePort({
+      type: PipelineType.MULTI_SHOT,
+      heldCost: 100,
+      seedSteps: [
+        pending({ id: "s-a", key: "A", stepType: "step", cost: 10, dependsOn: [] }),
+        pending({ id: "s-b", key: "merge", stepType: "merge", cost: 20, dependsOn: ["A"] }),
+        pending({ id: "s-c", key: "final", stepType: "step", cost: 30, dependsOn: ["merge"] }),
+      ],
+      cost: () => 0,
+      async runStep(step) {
+        if (step.key === "A") return { data: { from: "A" } };
+        // both "merge" and "final" produce assets
+        return { asset: asset(`https://x/${step.key}.mp4`) };
+      },
+    });
+
+    await runPipeline("pipe-1", port);
+
+    expect(port.pipeline.status).toBe(PipelineStatus.COMPLETED);
+    // sink is "final", not "merge"
+    expect(port.pipeline.outputAssetId).toBe(`asset-${port.getStep("final")!.id}`);
+    expect(port.pipeline.outputAssetId).not.toBe(`asset-${port.getStep("merge")!.id}`);
+  });
+
   it("scenario 8: port throws on a DONE patch — step FAILED, siblings finish, no reject", async () => {
     let thrownOnce = false;
     const port = makeFakePort({

@@ -91,6 +91,6 @@ describe("getDefinition", () => {
   });
 
   it("throws for an unregistered type", () => {
-    expect(() => getDefinition(PipelineType.SHORTS)).toThrow(/No pipeline definition/);
+    expect(() => getDefinition(PipelineType.PODCAST)).toThrow(/No pipeline definition/);
   });
 });
