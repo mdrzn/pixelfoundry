@@ -17,6 +17,8 @@ export async function runImageJob(options: ProviderJobOptions<ImageJobInput>): P
       return runGeminiImageJob(options);
     case Provider.OPENAI:
       return runOpenAIImageJob(options);
+    case Provider.FAL:
+      return runFalImageJob(options);
     default:
       throw new ProviderJobError(`Provider ${options.model.provider} is not supported for image jobs.`);
   }
@@ -45,6 +47,8 @@ export async function runVideoJob(options: ProviderJobOptions<VideoJobInput>): P
       return runGeminiVideoJob(options);
     case Provider.OPENAI:
       return runOpenAIVideoJob(options);
+    case Provider.FAL:
+      return runFalVideoJob(options);
     default:
       throw new ProviderJobError(`Provider ${options.model.provider} is not supported for video jobs.`);
   }
@@ -54,3 +58,4 @@ export async function runVideoJob(options: ProviderJobOptions<VideoJobInput>): P
 import { runReplicateEditImageJob, runReplicateImageJob, runReplicateVideoJob } from "@/lib/providers/replicate";
 import { runGeminiEditImageJob, runGeminiImageJob, runGeminiVideoJob } from "@/lib/providers/gemini";
 import { runOpenAIEditImageJob, runOpenAIImageJob, runOpenAIVideoJob } from "@/lib/providers/openai";
+import { runFalImageJob, runFalVideoJob } from "@/lib/providers/fal";

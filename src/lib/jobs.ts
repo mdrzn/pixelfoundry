@@ -690,8 +690,8 @@ function assertProviderSupportsJob(provider: Provider, jobType: JobType) {
     throw new Error("Gemini edit-image workflows are not supported yet. Choose another provider.");
   }
 
-  if (jobType === JobType.CREATE_VIDEO && provider !== Provider.REPLICATE) {
-    throw new Error("Video generation is only available through Replicate at this time.");
+  if (jobType === JobType.CREATE_VIDEO && provider !== Provider.REPLICATE && provider !== Provider.FAL) {
+    throw new Error("Video generation is available through Replicate or fal.ai.");
   }
 }
 
