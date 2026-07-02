@@ -1,36 +1,61 @@
 import { Buffer } from "node:buffer";
 
 import { NextRequest, NextResponse } from "next/server";
-import { AssetType } from "@prisma/client";
 
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 import { storage } from "@/lib/storage";
 import { persistBytesToStorage } from "@/lib/storage/persist";
 
+import { classifyUpload } from "./classify";
+
 export const runtime = "nodejs";
 
-const MAX_FILE_SIZE_BYTES = 6 * 1024 * 1024; // 6 MB
-const ALLOWED_MIME_TYPES = new Set([
-  "image/png",
-  "image/jpeg",
-  "image/jpg",
-  "image/webp",
-  "image/gif",
-]);
-
-// Magic bytes for supported image formats
-const MAGIC_BYTES: Array<{ mime: string; bytes: number[] }> = [
-  { mime: "image/png", bytes: [0x89, 0x50, 0x4e, 0x47] },
-  { mime: "image/jpeg", bytes: [0xff, 0xd8, 0xff] },
-  { mime: "image/gif", bytes: [0x47, 0x49, 0x46, 0x38] },
-  { mime: "image/webp", bytes: [0x52, 0x49, 0x46, 0x46] }, // RIFF header
+// Magic bytes for supported image formats. Images keep a strict content sniff.
+const IMAGE_MAGIC_BYTES: Array<{ bytes: number[] }> = [
+  { bytes: [0x89, 0x50, 0x4e, 0x47] }, // PNG
+  { bytes: [0xff, 0xd8, 0xff] }, // JPEG
+  { bytes: [0x47, 0x49, 0x46, 0x38] }, // GIF
+  { bytes: [0x52, 0x49, 0x46, 0x46] }, // RIFF header (WEBP)
 ];
 
+function matches(buffer: Buffer, bytes: number[], offset = 0): boolean {
+  return bytes.every((byte, i) => buffer[offset + i] === byte);
+}
+
 function isValidImageMagicBytes(buffer: Buffer): boolean {
-  return MAGIC_BYTES.some(({ bytes }) =>
-    bytes.every((byte, i) => buffer[i] === byte),
-  );
+  return IMAGE_MAGIC_BYTES.some(({ bytes }) => matches(buffer, bytes));
+}
+
+/**
+ * Best-effort audio content sniff. We can strictly recognise MP3, WAV, WebM
+ * (Matroska) and MP4/M4A (ftyp) containers. If the bytes don't match any known
+ * audio signature we fall back to trusting the (already allow-listed) MIME
+ * type, since not every audio container is cheaply sniffable.
+ */
+function isPlausibleAudioMagicBytes(buffer: Buffer): boolean {
+  // MP3: "ID3" tag or MPEG frame sync (FF FB / FF F3 / FF F2)
+  if (matches(buffer, [0x49, 0x44, 0x33])) return true; // "ID3"
+  if (
+    buffer[0] === 0xff &&
+    (buffer[1] === 0xfb || buffer[1] === 0xf3 || buffer[1] === 0xf2)
+  ) {
+    return true;
+  }
+
+  // WAV: "RIFF" .... "WAVE"
+  if (matches(buffer, [0x52, 0x49, 0x46, 0x46]) && matches(buffer, [0x57, 0x41, 0x56, 0x45], 8)) {
+    return true;
+  }
+
+  // WebM / Matroska: EBML header 1A 45 DF A3
+  if (matches(buffer, [0x1a, 0x45, 0xdf, 0xa3])) return true;
+
+  // MP4 / M4A: "ftyp" box at offset 4
+  if (matches(buffer, [0x66, 0x74, 0x79, 0x70], 4)) return true;
+
+  // Unknown container: trust the allow-listed MIME type.
+  return true;
 }
 
 export async function POST(request: NextRequest) {
@@ -46,27 +71,38 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Upload a valid image file." }, { status: 400 });
   }
 
-  if (file.size > MAX_FILE_SIZE_BYTES) {
+  const mimeType = file.type || "image/png";
+  const classification = classifyUpload(mimeType);
+  if (!classification) {
     return NextResponse.json(
-      { error: "Reference images must be smaller than 6MB." },
-      { status: 413 },
+      {
+        error:
+          "Unsupported format. Use an image (PNG, JPEG, WEBP, GIF) or audio (MP3, WAV, M4A, WEBM) file.",
+      },
+      { status: 415 },
     );
   }
 
-  const mimeType = file.type || "image/png";
-  if (!ALLOWED_MIME_TYPES.has(mimeType)) {
+  if (file.size > classification.maxBytes) {
+    const limitMb = Math.round(classification.maxBytes / (1024 * 1024));
+    const noun = classification.kind === "audio" ? "Audio files" : "Reference images";
     return NextResponse.json(
-      { error: "Unsupported image format. Use PNG, JPEG, WEBP, or GIF." },
-      { status: 415 },
+      { error: `${noun} must be smaller than ${limitMb}MB.` },
+      { status: 413 },
     );
   }
 
   const arrayBuffer = await file.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
 
-  if (!isValidImageMagicBytes(buffer)) {
+  const contentIsValid =
+    classification.kind === "image"
+      ? isValidImageMagicBytes(buffer)
+      : isPlausibleAudioMagicBytes(buffer);
+
+  if (!contentIsValid) {
     return NextResponse.json(
-      { error: "File content does not match a supported image format." },
+      { error: "File content does not match a supported format." },
       { status: 415 },
     );
   }
@@ -74,7 +110,7 @@ export async function POST(request: NextRequest) {
   const asset = await prisma.asset.create({
     data: {
       userId: session.user.id,
-      type: AssetType.IMAGE,
+      type: classification.assetType,
       title: file.name.slice(0, 80),
       url: "",
       metadata: {

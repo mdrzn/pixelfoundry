@@ -8,9 +8,18 @@ export const EXT_BY_CONTENT_TYPE: Record<string, string> = {
   "image/webp": "webp",
   "image/gif": "gif",
   "video/mp4": "mp4",
+  // "audio/webm" and "video/webm" share the "webm" extension. "video/webm"
+  // must come LAST so the inverse map (last-write-wins) keeps resolving the
+  // "webm" extension back to the canonical "video/webm" (unchanged behavior).
+  "audio/webm": "webm",
   "video/webm": "webm",
   "audio/mpeg": "mp3",
+  // Both WAV aliases map to the "wav" extension. Order matters: "audio/wav"
+  // must come LAST so the auto-derived inverse map (last-write-wins) resolves
+  // the "wav" extension back to the canonical "audio/wav".
+  "audio/x-wav": "wav",
   "audio/wav": "wav",
+  "audio/mp4": "m4a",
 };
 
 export function extFromContentType(ct: string): string {
