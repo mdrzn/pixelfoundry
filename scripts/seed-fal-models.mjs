@@ -21,6 +21,23 @@ const FAL_MODELS = [
       },
     },
   },
+  {
+    // image-to-video model for Multi-Shot per-shot clips.
+    // NOTE: inputMap field names are best-effort and MUST be validated against
+    // the live fal endpoint before the first paid run (see the "seed a
+    // validated fal video model" follow-up).
+    slug: "fal-ai/ltx-video-13b-098-distilled/image-to-video",
+    displayName: "LTX Video (fal, i2v)",
+    description: "fal.ai image-to-video for Multi-Shot per-shot clips.",
+    jobTypes: [JobType.CREATE_VIDEO],
+    creditCost: 40,
+    metadata: {
+      fal: {
+        falEndpoint: "fal-ai/ltx-video-13b-098-distilled/image-to-video",
+        inputMap: { prompt: "prompt", image_url: "image_url", aspectRatio: "aspect_ratio" },
+      },
+    },
+  },
 ];
 
 async function main() {
