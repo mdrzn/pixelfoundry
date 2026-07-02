@@ -23,7 +23,7 @@ cd /home/tools/public_html/dashboard-app
 git checkout -b phase-0-1-foundations-fal
 ```
 
-Prisma note: the `Canvas` model was previously applied with `prisma db push` (no migration file), so the first `prisma migrate dev` in this plan will also fold Canvas into migration history — expected, not an error.
+**Prisma migration note (IMPORTANT — supersedes `migrate dev` in Tasks 1 & 7):** the `Canvas` model was applied with `prisma db push` (no migration file), so migration history is already drifted from the DB. Running `prisma migrate dev` would detect drift and offer to **reset (wipe) the database**, which holds real test data. Therefore Phase 0/1 uses **`npx prisma db push`** for all schema changes (safe, no reset, consistent with current practice). Wherever a task step says `prisma migrate dev`, use `npx prisma db push` instead. Establishing a clean migration baseline is a tracked follow-up before external users onboard.
 
 ---
 
