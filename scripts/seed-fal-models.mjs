@@ -91,7 +91,7 @@ const FAL_MODELS = [
     description: "fal.ai LLM router for script/analysis steps.",
     jobTypes: [],
     creditCost: 1,
-    metadata: { fal: { falEndpoint: "fal-ai/any-llm", inputMap: { prompt: "prompt" } } },
+    metadata: { fal: { falEndpoint: "fal-ai/any-llm", inputMap: { prompt: "prompt" }, staticInputs: { model: "anthropic/claude-3.5-sonnet" } } },
   },
   {
     slug: "fal-ai/minimax-music",

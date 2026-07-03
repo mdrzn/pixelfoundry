@@ -71,7 +71,7 @@ export function extractJson(text: string): unknown {
   }
 }
 
-const llm: StepRunner = async (resolvedInput) => {
+const llm: StepRunner = async (resolvedInput, providerModelId, ctx) => {
   const base = resolvedInput.prompt;
   if (typeof base !== "string") throw new Error("llm runner: resolvedInput.prompt must be a string");
   // Optional context (e.g. a runtime transcript) is appended as serialized JSON
@@ -80,11 +80,17 @@ const llm: StepRunner = async (resolvedInput) => {
     resolvedInput.context !== undefined
       ? `${base}\n\nCONTEXT:\n${JSON.stringify(resolvedInput.context)}`
       : base;
-  const model =
-    typeof resolvedInput.llmModelId === "string" && resolvedInput.llmModelId
-      ? resolvedInput.llmModelId
-      : "anthropic/claude-3.5-sonnet";
-  const { data } = await runFalStep("fal-ai/any-llm", { prompt, model });
+  // Prefer the configured ProviderModel: its metadata (fal endpoint + staticInputs,
+  // e.g. the concrete fal model NAME) drives the call. `providerModelId` is OUR row id,
+  // NOT a fal model name, so it must never be sent as fal's `model` param.
+  let data: Record<string, unknown>;
+  if (providerModelId) {
+    const model = await ctx.getModel(providerModelId);
+    ({ data } = await runFalModelStep(model, { prompt }));
+  } else {
+    // Fallback when no model is configured on the step.
+    ({ data } = await runFalStep("fal-ai/any-llm", { prompt, model: "anthropic/claude-3.5-sonnet" }));
+  }
   const text = (data.output ?? data.text ?? data.response) as unknown;
   if (typeof text !== "string") throw new Error("llm runner: fal response had no output/text/response text field");
   return { data: extractJson(text) };
