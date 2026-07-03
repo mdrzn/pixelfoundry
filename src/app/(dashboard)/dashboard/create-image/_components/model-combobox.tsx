@@ -105,7 +105,7 @@ export function ModelCombobox({
               className="flex h-10 w-full rounded-md bg-transparent py-3 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50"
             />
           </div>
-          <CommandList>
+          <CommandList className="max-h-[min(65vh,560px)]">
             <CommandEmpty>No models found.</CommandEmpty>
             <CommandGroup>
               {filteredModels.map((model) => (
