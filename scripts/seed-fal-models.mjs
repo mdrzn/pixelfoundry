@@ -26,14 +26,14 @@ const FAL_MODELS = [
     // NOTE: inputMap field names are best-effort and MUST be validated against
     // the live fal endpoint before the first paid run (see the "seed a
     // validated fal video model" follow-up).
-    slug: "fal-ai/ltx-video-13b-098-distilled/image-to-video",
+    slug: "fal-ai/ltx-video/image-to-video",
     displayName: "LTX Video (fal, i2v)",
     description: "fal.ai image-to-video for Multi-Shot per-shot clips.",
     jobTypes: [JobType.CREATE_VIDEO],
     creditCost: 40,
     metadata: {
       fal: {
-        falEndpoint: "fal-ai/ltx-video-13b-098-distilled/image-to-video",
+        falEndpoint: "fal-ai/ltx-video/image-to-video",
         inputMap: { prompt: "prompt", image_url: "image_url", aspectRatio: "aspect_ratio" },
       },
     },
@@ -102,20 +102,20 @@ const FAL_MODELS = [
     metadata: { fal: { falEndpoint: "fal-ai/minimax-music", inputMap: { prompt: "prompt" } } },
   },
   {
-    slug: "fal-ai/auto-subtitle",
+    slug: "fal-ai/workflow-utilities/auto-subtitle",
     displayName: "Auto Subtitle (fal)",
     description: "fal.ai auto-subtitle burn-in for Shorts.",
     jobTypes: [],
     creditCost: 3,
-    metadata: { fal: { falEndpoint: "fal-ai/auto-subtitle", inputMap: { video_url: "video_url" } } },
+    metadata: { fal: { falEndpoint: "fal-ai/workflow-utilities/auto-subtitle", inputMap: { video_url: "video_url" } } },
   },
   {
-    slug: "fal-ai/ffmpeg-api/mux-audio",
+    slug: "fal-ai/ffmpeg-api/merge-audio-video",
     displayName: "Mux Audio (fal)",
     description: "fal.ai mux audio into video (Shorts/Podcast).",
     jobTypes: [],
     creditCost: 1,
-    metadata: { fal: { falEndpoint: "fal-ai/ffmpeg-api/mux-audio", inputMap: { video_url: "video_url", audio_url: "audio_url" } } },
+    metadata: { fal: { falEndpoint: "fal-ai/ffmpeg-api/merge-audio-video", inputMap: { video_url: "video_url", audio_url: "audio_url" } } },
   },
   {
     slug: "fal-ai/bytedance/seedream/v5/lite/edit",

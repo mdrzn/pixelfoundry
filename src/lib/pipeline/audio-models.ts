@@ -13,8 +13,8 @@ export const SHORTS_MODEL_SLUGS = {
   script: "fal-ai/any-llm",
   voice: "fal-ai/minimax/speech-2.6-hd",
   music: "fal-ai/minimax-music",
-  subtitle: "fal-ai/auto-subtitle",
-  mux: "fal-ai/ffmpeg-api/mux-audio",
+  subtitle: "fal-ai/workflow-utilities/auto-subtitle",
+  mux: "fal-ai/ffmpeg-api/merge-audio-video",
 } as const;
 
 /**
