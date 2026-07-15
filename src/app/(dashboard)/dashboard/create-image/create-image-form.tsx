@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useFormState } from "react-dom";
 import Link from "next/link";
 import { Provider } from "@prisma/client";
-import { Check, ImagePlus, Loader2, Save, SlidersHorizontal, Sparkles, Trash2, Settings2, Minus } from "lucide-react";
+import { Check, ImagePlus, Loader2, Plus, Save, SlidersHorizontal, Sparkles, Trash2, Settings2, Minus, RectangleHorizontal, RectangleVertical, Smartphone, Square, Wand2 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useSession } from "next-auth/react";
 
@@ -123,14 +123,13 @@ const DEFAULT_CFG_SCALE = 7.5;
 const DEFAULT_STEPS = 30;
 const DEFAULT_WIDTH = 1024;
 
-const ASPECT_RATIOS = [
-  { label: "Square 1:1", value: "1:1" },
-  { label: "Landscape 16:9", value: "16:9" },
-  { label: "Landscape 3:2", value: "3:2" },
-  { label: "Portrait 4:5", value: "4:5" },
-  { label: "Portrait 9:16", value: "9:16" },
-  { label: "Ultrawide 21:9", value: "21:9" },
-  { label: "Custom", value: "custom" },
+// Quick aspect-ratio picker shown as icon buttons (2026 studio look).
+const ASPECT_PRESETS: { value: string; label: string; icon: typeof Square }[] = [
+  { value: "1:1", label: "1:1", icon: Square },
+  { value: "16:9", label: "16:9", icon: RectangleHorizontal },
+  { value: "4:5", label: "4:5", icon: RectangleVertical },
+  { value: "3:2", label: "3:2", icon: RectangleHorizontal },
+  { value: "9:16", label: "9:16", icon: Smartphone },
 ];
 
 const NEGATIVE_PROMPT_SUGGESTIONS = [
@@ -452,16 +451,6 @@ export function CreateImageForm({
     }
   }
 
-  function handleCustomAspectRatioChange(value: string) {
-    setCustomAspectRatio(value);
-    setAspectRatio(value);
-    if (!manualDimensions && value.match(/^(\d{1,2}):(\d{1,2})$/)) {
-      const inferred = computeDimensionsFromRatio(value, width ?? DEFAULT_WIDTH);
-      setWidth(inferred.width);
-      setHeight(inferred.height);
-    }
-  }
-
   const referenceIds = referenceAssets.map((asset) => asset.id);
 
   async function handleSavePreset(event: React.FormEvent<HTMLFormElement>) {
@@ -549,7 +538,7 @@ export function CreateImageForm({
   const sharedPresets = presetList.filter((preset) => preset.userId !== currentUserId);
 
   return (
-    <div className="flex h-[calc(100vh-12rem)] flex-col gap-6 lg:flex-row">
+    <div className="flex h-[calc(100dvh-7rem)] flex-col gap-5 lg:flex-row">
       {/* Sidebar with form controls */}
       <form action={formAction} className="contents">
         <CreateImageSidebar
@@ -560,19 +549,40 @@ export function CreateImageForm({
               {referenceAssets.map((asset) => (
                 <input key={asset.id} type="hidden" name="referenceAssetIds" value={asset.id} />
               ))}
-              <Button type="submit" disabled={!modelOptions.length} size="lg" className="w-full">
-                <Sparkles className="mr-2 h-4 w-4" />
-                Create image ({selectedModel?.creditCost ?? "…"} credits)
+              <Button
+                type="submit"
+                disabled={!modelOptions.length}
+                size="lg"
+                className="w-full justify-between border-0 bg-gradient-to-r from-brand to-brand-2 text-white shadow-md transition-opacity hover:opacity-95"
+              >
+                <span className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4" />
+                  Generate Image
+                </span>
+                <span className="text-sm font-medium text-white/90">
+                  {selectedModel?.creditCost ?? "…"} credits
+                </span>
               </Button>
-              {state.ok && typeof state.balanceAfter === "number" ? (
-                <p className="text-center text-xs text-muted-foreground">
-                  Balance: {state.balanceAfter} credits
-                </p>
-              ) : null}
+              <p className="text-center text-xs text-muted-foreground">
+                {state.ok && typeof state.balanceAfter === "number"
+                  ? `Balance: ${state.balanceAfter} credits`
+                  : `This will use ${selectedModel?.creditCost ?? "…"} credits from your balance.`}
+              </p>
             </div>
           }
         >
           <div className="space-y-4">
+          <div className="flex items-center gap-2.5 pb-1">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-brand to-brand-2 text-white shadow-sm">
+              <Sparkles className="h-4 w-4" />
+            </div>
+            <div className="min-w-0">
+              <h2 className="text-lg font-semibold leading-none">Create Image</h2>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Describe your idea and watch it come to life.
+              </p>
+            </div>
+          </div>
           {capabilitiesLoading && (
             <div className="rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-900">
               Loading model capabilities...
@@ -607,7 +617,6 @@ export function CreateImageForm({
 
           {/* Essentials Section - Always visible */}
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold">Essentials</h3>
               <div className="space-y-3">
                 <div className="space-y-2">
                   <Label htmlFor="model">Model</Label>
@@ -624,52 +633,75 @@ export function CreateImageForm({
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="aspectRatio">Aspect ratio</Label>
-                  <Select
-                    value={aspectRatio || (customAspectRatio ? "custom" : "")}
-                    onValueChange={handleAspectRatioChange}
-                  >
-                    <SelectTrigger id="aspectRatio">
-                      <SelectValue placeholder="Select ratio" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {ASPECT_RATIOS.map((option) => (
-                        <SelectItem key={option.value} value={option.value}>
+                  <Label>Aspect ratio</Label>
+                  <div className="grid grid-cols-5 gap-2">
+                    {ASPECT_PRESETS.map((option) => {
+                      const Icon = option.icon;
+                      const active = (aspectRatio || customAspectRatio) === option.value;
+                      return (
+                        <button
+                          key={option.value}
+                          type="button"
+                          onClick={() => handleAspectRatioChange(option.value)}
+                          aria-pressed={active}
+                          className={cn(
+                            "flex flex-col items-center gap-1.5 rounded-lg border py-2.5 text-xs font-medium transition-colors",
+                            active
+                              ? "border-brand bg-brand/10 text-brand"
+                              : "border-border bg-card text-muted-foreground hover:border-brand/40 hover:text-foreground"
+                          )}
+                        >
+                          <Icon className="h-4 w-4" />
                           {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                        </button>
+                      );
+                    })}
+                  </div>
                   <input type="hidden" name="aspectRatio" value={aspectRatio || customAspectRatio} />
-                  {(!aspectRatio || aspectRatio === "") && (
-                    <Input
-                      value={customAspectRatio}
-                      placeholder="e.g. 5:4"
-                      onChange={(event) => handleCustomAspectRatioChange(event.target.value)}
-                    />
-                  )}
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="prompt">Prompt</Label>
-                <Textarea
-                  id="prompt"
-                  name="prompt"
-                  placeholder="Describe the visual you want to generate..."
-                  rows={4}
-                  required
-                  value={prompt}
-                  onChange={(event) => setPrompt(event.target.value)}
-                />
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="prompt">Prompt</Label>
+                  <button
+                    type="button"
+                    onClick={() => setEnhancePrompt((v) => !v)}
+                    aria-pressed={enhancePrompt}
+                    title="Auto-enhance the prompt with cinematic detail before generating"
+                    className={cn(
+                      "inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-colors",
+                      enhancePrompt
+                        ? "bg-brand/10 text-brand"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    <Wand2 className="h-3.5 w-3.5" />
+                    Enhance
+                  </button>
+                </div>
+                <div className="relative">
+                  <Textarea
+                    id="prompt"
+                    name="prompt"
+                    placeholder="What do you want to create?"
+                    rows={4}
+                    required
+                    maxLength={1200}
+                    value={prompt}
+                    onChange={(event) => setPrompt(event.target.value)}
+                    className="pb-6"
+                  />
+                  <span className="pointer-events-none absolute bottom-2 right-3 text-[0.7rem] text-muted-foreground">
+                    {prompt.length} / 1200
+                  </span>
+                </div>
                 <div className="flex flex-wrap gap-2">
                   {STYLE_TEMPLATES.map((template) => (
-                    <Button
+                    <button
                       key={template.id}
                       type="button"
-                      size="sm"
-                      variant="outline"
-                      className="text-xs"
+                      className="inline-flex items-center gap-1 rounded-full border bg-card px-3 py-1 text-xs text-muted-foreground transition-colors hover:border-brand/40 hover:text-foreground"
                       onClick={() => {
                         setPrompt(template.prompt);
                         setNegativePrompt(template.negativePrompt ?? "");
@@ -683,9 +715,9 @@ export function CreateImageForm({
                         }
                       }}
                     >
-                      <Sparkles className="mr-2 h-3.5 w-3.5" />
-                      Try {template.name}
-                    </Button>
+                      <Plus className="h-3 w-3" />
+                      {template.name}
+                    </button>
                   ))}
                 </div>
               </div>
@@ -1191,7 +1223,7 @@ export function CreateImageForm({
       </form>
 
       {/* Canvas with recent generations */}
-      <div className="flex-1 overflow-hidden rounded-lg border bg-background p-6">
+      <div className="flex-1 overflow-y-auto rounded-xl border bg-card p-6 shadow-sm">
         <GenerationCanvas
           recentAssets={recentAssets}
           selectedAssetIds={referenceAssets.map((a) => a.id)}

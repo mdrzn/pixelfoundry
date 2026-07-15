@@ -1,9 +1,6 @@
-import Link from "next/link";
 import { AssetType, JobType, PresetVisibility, Provider } from "@prisma/client";
 
 import { CreateImageForm } from "@/app/(dashboard)/dashboard/create-image/create-image-form";
-import { DashboardPageContainer } from "@/components/layout/dashboard-sidebar";
-import { Button } from "@/components/ui/button";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 
@@ -164,21 +161,11 @@ export default async function CreateImagePage() {
   }));
 
   return (
-    <DashboardPageContainer
-      title="Create image"
-      description="Send a prompt to one of the curated models and manage quality presets."
-      action={
-        <Button variant="secondary" asChild>
-          <Link href="/dashboard/library">View library</Link>
-        </Button>
-      }
-    >
-      <CreateImageForm
-        modelOptions={modelOptions}
-        presets={presetOptions}
-        recentAssets={recentAssetOptions}
-        currentUserId={userId}
-      />
-    </DashboardPageContainer>
+    <CreateImageForm
+      modelOptions={modelOptions}
+      presets={presetOptions}
+      recentAssets={recentAssetOptions}
+      currentUserId={userId}
+    />
   );
 }
