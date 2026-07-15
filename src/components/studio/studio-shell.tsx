@@ -1,6 +1,11 @@
+"use client";
+
 import * as React from "react";
+import { usePathname } from "next/navigation";
+import { Sparkles } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { navMetaFor } from "@/lib/tool-registry";
 
 /**
  * Two-pane, full-height studio layout.
@@ -33,14 +38,25 @@ export function StudioShell({
   tracker: React.ReactNode;
   preview: React.ReactNode;
 }) {
+  const pathname = usePathname();
+  const meta = navMetaFor(pathname);
+  const HeaderIcon = meta?.icon ?? Sparkles;
+
   return (
     <div className="flex flex-col gap-5 lg:h-[calc(100dvh-7rem)]">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold tracking-tight">{title}</h1>
-          {description ? (
-            <p className="text-sm text-muted-foreground">{description}</p>
-          ) : null}
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-brand to-brand-2 text-white shadow-sm">
+            <HeaderIcon className="h-5 w-5" />
+          </div>
+          <div className="flex flex-col gap-1">
+            <h1 className="text-2xl font-semibold leading-none tracking-tight">
+              {title}
+            </h1>
+            {description ? (
+              <p className="text-sm text-muted-foreground">{description}</p>
+            ) : null}
+          </div>
         </div>
         {estCost || action ? (
           <div className="flex shrink-0 items-center gap-3">
