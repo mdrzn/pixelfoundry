@@ -1,7 +1,6 @@
 import { AssetType, JobType, Provider } from "@prisma/client";
 
 import { EditImageForm } from "@/app/(dashboard)/dashboard/edit-image/edit-image-form";
-import { DashboardPageContainer } from "@/components/layout/dashboard-sidebar";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 
@@ -67,12 +66,5 @@ export default async function EditImagePage() {
     createdAt: asset.createdAt.toISOString(),
   }));
 
-  return (
-    <DashboardPageContainer
-      title="Edit image"
-      description="Upload or select an existing asset to inpaint, outpaint, or apply style transfers."
-    >
-      <EditImageForm modelOptions={modelOptions} recentAssets={recentAssetOptions} />
-    </DashboardPageContainer>
-  );
+  return <EditImageForm modelOptions={modelOptions} recentAssets={recentAssetOptions} />;
 }

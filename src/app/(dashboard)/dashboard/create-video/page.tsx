@@ -1,7 +1,6 @@
 import { AssetType, JobType, Provider } from "@prisma/client";
 
 import { CreateVideoForm } from "@/app/(dashboard)/dashboard/create-video/create-video-form";
-import { DashboardPageContainer } from "@/components/layout/dashboard-sidebar";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/session";
 
@@ -67,12 +66,5 @@ export default async function CreateVideoPage() {
     createdAt: asset.createdAt.toISOString(),
   }));
 
-  return (
-    <DashboardPageContainer
-      title="Create video"
-      description="Synthesize motion from text or extend existing footage with curated vendors."
-    >
-      <CreateVideoForm modelOptions={modelOptions} recentAssets={recentAssetOptions} />
-    </DashboardPageContainer>
-  );
+  return <CreateVideoForm modelOptions={modelOptions} recentAssets={recentAssetOptions} />;
 }

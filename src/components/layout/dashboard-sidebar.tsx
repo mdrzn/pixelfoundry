@@ -1,37 +1,14 @@
 "use client";
 
-import type { ElementType } from "react";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { UserRole } from "@prisma/client";
-import {
-  BadgeDollarSign,
-  Brush,
-  AudioLines,
-  Boxes,
-  Captions,
-  ChevronRight,
-  Clapperboard,
-  Coins,
-  FileImage,
-  FilmIcon,
-  ImageIcon,
-  Languages,
-  LayoutDashboardIcon,
-  LibraryIcon,
-  LifeBuoy,
-  Podcast,
-  Settings,
-  ShieldCheck,
-  Sparkles,
-  Subtitles,
-  Video,
-  Workflow,
-} from "lucide-react";
+import { ChevronRight, Coins, LayoutDashboardIcon } from "lucide-react";
 
 import { dashboardNav, siteConfig, type NavItem } from "@/lib/site-config";
+import { iconClass, navMetaFor } from "@/lib/tool-registry";
 import {
   Sidebar,
   SidebarContent,
@@ -65,29 +42,6 @@ type DashboardUser = {
   role: UserRole;
 };
 
-const iconMap: Record<string, ElementType> = {
-  Overview: LayoutDashboardIcon,
-  "Create Image": ImageIcon,
-  "Edit Image": Brush,
-  "Create Video": FilmIcon,
-  "Multi-Shot": Clapperboard,
-  "Voice-over": AudioLines,
-  Shorts: Sparkles,
-  "Scene Builder": Boxes,
-  Podcast: Podcast,
-  "Translate Text": Languages,
-  Transcribe: Captions,
-  "Translate Image": FileImage,
-  Subtitles: Subtitles,
-  Dubbing: Video,
-  "My Library": LibraryIcon,
-  Canvas: Workflow,
-  "Billing & Credits": BadgeDollarSign,
-  Settings,
-  Support: LifeBuoy,
-  "Admin Console": ShieldCheck,
-};
-
 function useActivePath() {
   const pathname = usePathname();
   const isActive = (href: string) =>
@@ -104,7 +58,8 @@ function NavLink({
   item: NavItem;
   active: boolean;
 }) {
-  const Icon = iconMap[item.name] ?? LayoutDashboardIcon;
+  const meta = navMetaFor(item.href);
+  const Icon = meta?.icon ?? LayoutDashboardIcon;
   return (
     <SidebarMenuItem>
       <SidebarMenuButton
@@ -117,12 +72,19 @@ function NavLink({
         )}
       >
         <Link href={item.href} className="flex items-center gap-3">
-          <Icon
+          <span
             className={cn(
-              "h-4 w-4 shrink-0",
-              active ? "text-sidebar-primary" : "text-muted-foreground"
+              "flex h-6 w-6 shrink-0 items-center justify-center rounded-md transition-colors",
+              active ? "bg-sidebar-primary/10" : "bg-transparent"
             )}
-          />
+          >
+            <Icon
+              className={cn(
+                "h-4 w-4 shrink-0",
+                meta ? iconClass(meta.color) : "text-muted-foreground"
+              )}
+            />
+          </span>
           <span className="truncate">{item.name}</span>
         </Link>
       </SidebarMenuButton>

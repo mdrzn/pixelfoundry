@@ -191,7 +191,7 @@ export function EditImageForm({ modelOptions, recentAssets }: EditImageFormProps
   } as const;
 
   return (
-    <div className="flex h-[calc(100vh-12rem)] flex-col gap-6 lg:flex-row">
+    <div className="flex h-[calc(100dvh-7rem)] flex-col gap-5 lg:flex-row">
       {/* Sidebar with form controls */}
       <form action={formAction} className="contents">
         <input type="hidden" name="mode" value={mode} />
@@ -203,15 +203,25 @@ export function EditImageForm({ modelOptions, recentAssets }: EditImageFormProps
         <CreateImageSidebar
           footer={
             <div className="flex flex-col gap-3">
-              <Button type="submit" disabled={!modelOptions.length} size="lg" className="w-full">
-                <Sparkles className="mr-2 h-4 w-4" />
-                Send edit ({pricing?.totalCredits ?? selectedModel?.creditCost ?? "…"} credits)
+              <Button
+                type="submit"
+                disabled={!modelOptions.length}
+                size="lg"
+                className="w-full justify-between border-0 bg-gradient-to-r from-brand to-brand-2 text-white shadow-md transition-opacity hover:opacity-95"
+              >
+                <span className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4" />
+                  Apply Edit
+                </span>
+                <span className="text-sm font-medium text-white/90">
+                  {pricing?.totalCredits ?? selectedModel?.creditCost ?? "…"} credits
+                </span>
               </Button>
-              {state.ok && typeof state.balanceAfter === "number" ? (
-                <p className="text-center text-xs text-muted-foreground">
-                  Balance: {state.balanceAfter} credits
-                </p>
-              ) : null}
+              <p className="text-center text-xs text-muted-foreground">
+                {state.ok && typeof state.balanceAfter === "number"
+                  ? `Balance: ${state.balanceAfter} credits`
+                  : `This will use ${pricing?.totalCredits ?? selectedModel?.creditCost ?? "…"} credits from your balance.`}
+              </p>
             </div>
           }
         >
@@ -245,9 +255,20 @@ export function EditImageForm({ modelOptions, recentAssets }: EditImageFormProps
               </div>
             ) : null}
 
+            <div className="flex items-center gap-2.5 pb-1">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-brand to-brand-2 text-white shadow-sm">
+                <Sparkles className="h-4 w-4" />
+              </div>
+              <div className="min-w-0">
+                <h2 className="text-lg font-semibold leading-none">Edit Image</h2>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Reimagine an existing image with AI.
+                </p>
+              </div>
+            </div>
+
             {/* Essentials Section */}
             <div className="space-y-4">
-              <h3 className="text-sm font-semibold">Essentials</h3>
               <div className="space-y-3">
                 <div className="space-y-2">
                   <Label htmlFor="model">Model</Label>
@@ -455,7 +476,7 @@ export function EditImageForm({ modelOptions, recentAssets }: EditImageFormProps
       </form>
 
       {/* Canvas with recent generations */}
-      <div className="flex-1 overflow-hidden rounded-lg border bg-background p-6">
+      <div className="flex-1 overflow-y-auto rounded-xl border bg-card p-6 shadow-sm">
         <GenerationCanvas
           recentAssets={recentAssets}
           emptyStateMessage="Your recent image edits will appear here. Start by editing your first image!"
