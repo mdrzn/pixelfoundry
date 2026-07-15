@@ -258,7 +258,7 @@ export function DashboardSidebar({
             </Link>
           </SidebarHeader>
 
-          <SidebarContent className="px-2 py-3">
+          <SidebarContent className="overflow-x-hidden px-2 py-3">
             <SidebarMenu>
               <NavLink
                 item={dashboardNav.overview}
