@@ -1841,7 +1841,7 @@ function AssetDetailsDialog({
   return (
     <Dialog open={open} onOpenChange={(value) => !value && onOpenChange(null)}>
           {asset ? (
-            <DialogContent className="max-w-3xl space-y-6">
+            <DialogContent className="max-h-[85dvh] max-w-3xl space-y-6 overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Asset details</DialogTitle>
                 <DialogDescription>
@@ -1849,7 +1849,7 @@ function AssetDetailsDialog({
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-3 rounded-md border p-4">
+                <div className="min-w-0 space-y-3 rounded-md border p-4">
                   <div className="flex items-center justify-between">
                     <h3 className="text-sm font-medium text-foreground">Prompt</h3>
                     <Button
@@ -1875,7 +1875,7 @@ function AssetDetailsDialog({
                     </div>
               ) : null}
             </div>
-            <div className="space-y-3 rounded-md border p-4">
+            <div className="min-w-0 space-y-3 rounded-md border p-4">
               <h3 className="text-sm font-medium text-foreground">Generation settings</h3>
               <div className="space-y-2 text-sm text-muted-foreground">
                 <div className="flex items-center justify-between">
@@ -1925,7 +1925,7 @@ function AssetDetailsDialog({
                   placeholder="comma separated"
                 />
               </div>
-              <div className="flex items-center justify-between pt-2">
+              <div className="flex flex-wrap gap-2 pt-2">
                 <Button
                   variant="outline"
                   size="sm"
@@ -1933,18 +1933,18 @@ function AssetDetailsDialog({
                     navigator.clipboard.writeText(buildDuplicateUrl(asset));
                     window.open(buildDuplicateUrl(asset), "_blank");
                   }}
-                  className="flex items-center gap-1"
+                  className="flex min-w-[8rem] flex-1 items-center justify-center gap-1.5"
                 >
-                  <ExternalLinkIcon className="size-3.5" />
+                  <ExternalLinkIcon className="size-3.5 shrink-0" />
                   Open workflow
                 </Button>
                 <Button
                   variant="secondary"
                   size="sm"
                   onClick={() => onRerun(asset)}
-                  className="flex items-center gap-1"
+                  className="flex min-w-[8rem] flex-1 items-center justify-center gap-1.5"
                 >
-                  <RefreshCcwIcon className="size-3.5" />
+                  <RefreshCcwIcon className="size-3.5 shrink-0" />
                   Re-run job
                 </Button>
               </div>

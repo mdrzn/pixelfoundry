@@ -6,6 +6,11 @@ export type NavItem = {
   adminOnly?: boolean;
 };
 
+export type NavGroup = {
+  label: string;
+  items: NavItem[];
+};
+
 export const marketingNav: NavItem[] = [
   { name: "Product", href: "/#product" },
   { name: "Pricing", href: "/#pricing" },
@@ -14,30 +19,53 @@ export const marketingNav: NavItem[] = [
 ];
 
 export const dashboardNav = {
-  primary: [
-    { name: "Overview", href: "/dashboard" },
-    { name: "Create Image", href: "/dashboard/create-image" },
-    { name: "Edit Image", href: "/dashboard/edit-image" },
-    { name: "Create Video", href: "/dashboard/create-video" },
-    { name: "Multi-Shot", href: "/dashboard/multi-shot" },
-    { name: "Voice-over", href: "/dashboard/voiceover" },
-    { name: "Shorts", href: "/dashboard/shorts" },
-    { name: "Scene Builder", href: "/dashboard/scene-builder" },
-    { name: "Podcast", href: "/dashboard/podcast" },
-    { name: "Translate Text", href: "/dashboard/translate-text" },
-    { name: "Transcribe", href: "/dashboard/transcribe" },
-    { name: "Translate Image", href: "/dashboard/translate-image" },
-    { name: "Subtitles", href: "/dashboard/subtitles" },
-    { name: "Dubbing", href: "/dashboard/dubbing" },
-    { name: "Canvas", href: "/dashboard/canvas" },
-    { name: "My Library", href: "/dashboard/library" },
+  // Standalone home link, rendered above the grouped sections.
+  overview: { name: "Overview", href: "/dashboard" } as NavItem,
+  // Tools clustered by intent so the list reads at a glance.
+  groups: [
+    {
+      label: "Create",
+      items: [
+        { name: "Create Image", href: "/dashboard/create-image" },
+        { name: "Edit Image", href: "/dashboard/edit-image" },
+        { name: "Create Video", href: "/dashboard/create-video" },
+        { name: "Multi-Shot", href: "/dashboard/multi-shot" },
+        { name: "Scene Builder", href: "/dashboard/scene-builder" },
+      ],
+    },
+    {
+      label: "Audio & Voice",
+      items: [
+        { name: "Voice-over", href: "/dashboard/voiceover" },
+        { name: "Podcast", href: "/dashboard/podcast" },
+        { name: "Shorts", href: "/dashboard/shorts" },
+      ],
+    },
+    {
+      label: "Translate & Text",
+      items: [
+        { name: "Translate Text", href: "/dashboard/translate-text" },
+        { name: "Transcribe", href: "/dashboard/transcribe" },
+        { name: "Translate Image", href: "/dashboard/translate-image" },
+        { name: "Subtitles", href: "/dashboard/subtitles" },
+        { name: "Dubbing", href: "/dashboard/dubbing" },
+      ],
+    },
+    {
+      label: "Workspace",
+      items: [
+        { name: "Canvas", href: "/dashboard/canvas" },
+        { name: "My Library", href: "/dashboard/library" },
+      ],
+    },
+  ] as NavGroup[],
+  // Account + support, pinned to the lower section.
+  account: [
     { name: "Billing & Credits", href: "/dashboard/billing" },
     { name: "Admin Console", href: "/dashboard/admin", adminOnly: true },
-  ],
-  secondary: [
     { name: "Settings", href: "/dashboard/settings" },
     { name: "Support", href: "/dashboard/support" },
-  ],
+  ] as NavItem[],
 };
 
 export const siteConfig = {
