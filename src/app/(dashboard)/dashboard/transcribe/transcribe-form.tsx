@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { Captions } from "lucide-react";
 
 import { submitTranscribeAction } from "@/app/(dashboard)/dashboard/transcribe/_actions/submit-transcribe";
 import { usePipelinePoller } from "@/app/(dashboard)/dashboard/multi-shot/_hooks/use-pipeline-poller";
 import { PipelineTracker } from "@/components/studio/pipeline-tracker";
+import { StudioEmptyState } from "@/components/studio/studio-empty-state";
 import { StudioShell } from "@/components/studio/studio-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -127,7 +129,7 @@ export function TranscribeForm({ modelsReady }: { modelsReady: boolean }) {
     ) : view?.status === "FAILED" ? (
       <p className="text-sm text-destructive">{view.error ?? "Transcription failed."}</p>
     ) : (
-      <p className="text-sm text-muted-foreground">Your transcript will appear here</p>
+      <StudioEmptyState icon={Captions} description="Your transcript will appear here." />
     );
 
   return (

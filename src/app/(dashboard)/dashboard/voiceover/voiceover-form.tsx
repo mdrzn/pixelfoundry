@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { AudioLines } from "lucide-react";
 
 import { submitVoiceoverAction } from "@/app/(dashboard)/dashboard/voiceover/_actions/submit-voiceover";
 import { usePipelinePoller } from "@/app/(dashboard)/dashboard/multi-shot/_hooks/use-pipeline-poller";
 import { PipelineTracker } from "@/components/studio/pipeline-tracker";
+import { StudioEmptyState } from "@/components/studio/studio-empty-state";
 import { StudioShell } from "@/components/studio/studio-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -152,7 +154,7 @@ export function VoiceoverForm({
     ) : view?.status === "FAILED" ? (
       <p className="text-sm text-destructive">{view.error ?? "Generation failed."}</p>
     ) : (
-      <p className="text-sm text-muted-foreground">Your voice-over will appear here</p>
+      <StudioEmptyState icon={AudioLines} description="Your voice-over will appear here." />
     );
 
   return (

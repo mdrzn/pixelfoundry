@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { Subtitles } from "lucide-react";
 
 import { submitSubtitlesAction } from "@/app/(dashboard)/dashboard/subtitles/_actions/submit-subtitles";
 import { usePipelinePoller } from "@/app/(dashboard)/dashboard/multi-shot/_hooks/use-pipeline-poller";
 import { PipelineTracker } from "@/components/studio/pipeline-tracker";
+import { StudioEmptyState } from "@/components/studio/studio-empty-state";
 import { StudioShell } from "@/components/studio/studio-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -149,7 +151,7 @@ export function SubtitlesForm({
     ) : view?.status === "FAILED" ? (
       <p className="text-sm text-destructive">{view.error ?? "Subtitle generation failed."}</p>
     ) : (
-      <p className="text-sm text-muted-foreground">Your subtitled video will appear here</p>
+      <StudioEmptyState icon={Subtitles} description="Your subtitled video will appear here." />
     );
 
   return (

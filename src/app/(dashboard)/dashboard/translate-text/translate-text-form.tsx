@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { Languages } from "lucide-react";
 
 import { submitTranslateTextAction } from "@/app/(dashboard)/dashboard/translate-text/_actions/submit-translate-text";
 import { usePipelinePoller } from "@/app/(dashboard)/dashboard/multi-shot/_hooks/use-pipeline-poller";
 import { PipelineTracker } from "@/components/studio/pipeline-tracker";
+import { StudioEmptyState } from "@/components/studio/studio-empty-state";
 import { StudioShell } from "@/components/studio/studio-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -126,7 +128,7 @@ export function TranslateTextForm({
     ) : view?.status === "FAILED" ? (
       <p className="text-sm text-destructive">{view.error ?? "Translation failed."}</p>
     ) : (
-      <p className="text-sm text-muted-foreground">Your translation will appear here</p>
+      <StudioEmptyState icon={Languages} description="Your translation will appear here." />
     );
 
   return (

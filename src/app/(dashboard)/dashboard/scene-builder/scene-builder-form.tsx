@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { Boxes } from "lucide-react";
 
 import { submitSceneBuilderAction } from "@/app/(dashboard)/dashboard/scene-builder/_actions/submit-scene-builder";
 import { usePipelinePoller } from "@/app/(dashboard)/dashboard/multi-shot/_hooks/use-pipeline-poller";
 import { PipelineTracker } from "@/components/studio/pipeline-tracker";
+import { StudioEmptyState } from "@/components/studio/studio-empty-state";
 import { StudioShell } from "@/components/studio/studio-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -105,7 +107,7 @@ export function SceneBuilderForm({ modelsReady }: { modelsReady: boolean }) {
     ) : view?.status === "FAILED" ? (
       <p className="text-sm text-destructive">{view.error ?? "Generation failed."}</p>
     ) : (
-      <p className="text-sm text-muted-foreground">Your scene film will appear here</p>
+      <StudioEmptyState icon={Boxes} description="Your scene film will appear here." />
     );
 
   return (

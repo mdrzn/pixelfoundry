@@ -3,11 +3,11 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { formatDistanceToNow } from "date-fns";
-import { ImageIcon, Loader2, SparklesIcon } from "lucide-react";
+import { ImageIcon, Loader2 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { StudioEmptyState } from "@/components/studio/studio-empty-state";
 
 type RecentAssetOption = {
   id: string;
@@ -75,23 +75,12 @@ export function GenerationCanvas({
 
   if (!loading && !hasJobs) {
     return (
-      <Card className="border-dashed">
-        <CardContent className="flex min-h-[400px] flex-col items-center justify-center gap-4 p-12 text-center">
-          <div className="rounded-full bg-primary/10 p-4">
-            <ImageIcon className="h-8 w-8 text-primary" />
-          </div>
-          <div className="space-y-2">
-            <h3 className="text-lg font-semibold">No generations yet</h3>
-            <p className="text-sm text-muted-foreground max-w-md">
-              {emptyStateMessage}
-            </p>
-          </div>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <SparklesIcon className="h-4 w-4" />
-            <span>Configure your prompt in the sidebar and click Generate</span>
-          </div>
-        </CardContent>
-      </Card>
+      <StudioEmptyState
+        icon={ImageIcon}
+        title="No generations yet"
+        description={emptyStateMessage}
+        hint="Configure your prompt in the sidebar and click Generate"
+      />
     );
   }
 

@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { Clapperboard } from "lucide-react";
 
 import { submitMultiShotAction } from "@/app/(dashboard)/dashboard/multi-shot/_actions/submit-multi-shot";
 import { usePipelinePoller } from "@/app/(dashboard)/dashboard/multi-shot/_hooks/use-pipeline-poller";
 import { PipelineTracker } from "@/components/studio/pipeline-tracker";
+import { StudioEmptyState } from "@/components/studio/studio-empty-state";
 import { StudioShell } from "@/components/studio/studio-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -186,9 +188,7 @@ export function MultiShotForm({
         {view.error ?? "Generation failed."}
       </p>
     ) : (
-      <p className="text-sm text-muted-foreground">
-        Your video will appear here
-      </p>
+      <StudioEmptyState icon={Clapperboard} description="Your multi-shot video will appear here." />
     );
 
   return (

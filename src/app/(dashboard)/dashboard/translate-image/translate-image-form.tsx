@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { FileImage } from "lucide-react";
 
 import { submitTranslateImageAction } from "@/app/(dashboard)/dashboard/translate-image/_actions/submit-translate-image";
 import { usePipelinePoller } from "@/app/(dashboard)/dashboard/multi-shot/_hooks/use-pipeline-poller";
 import { PipelineTracker } from "@/components/studio/pipeline-tracker";
+import { StudioEmptyState } from "@/components/studio/studio-empty-state";
 import { StudioShell } from "@/components/studio/studio-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -150,7 +152,7 @@ export function TranslateImageForm({
     ) : view?.status === "FAILED" ? (
       <p className="text-sm text-destructive">{view.error ?? "Image translation failed."}</p>
     ) : (
-      <p className="text-sm text-muted-foreground">Your translated image will appear here</p>
+      <StudioEmptyState icon={FileImage} description="Your translated image will appear here." />
     );
 
   return (

@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { Sparkles } from "lucide-react";
 
 import { submitShortsAction } from "@/app/(dashboard)/dashboard/shorts/_actions/submit-shorts";
 import { usePipelinePoller } from "@/app/(dashboard)/dashboard/multi-shot/_hooks/use-pipeline-poller";
 import { PipelineTracker } from "@/components/studio/pipeline-tracker";
+import { StudioEmptyState } from "@/components/studio/studio-empty-state";
 import { StudioShell } from "@/components/studio/studio-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -101,7 +103,7 @@ export function ShortsForm({ modelsReady }: { modelsReady: boolean }) {
     ) : view?.status === "FAILED" ? (
       <p className="text-sm text-destructive">{view.error ?? "Generation failed."}</p>
     ) : (
-      <p className="text-sm text-muted-foreground">Your short will appear here</p>
+      <StudioEmptyState icon={Sparkles} description="Your short will appear here." />
     );
 
   return (

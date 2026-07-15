@@ -1,10 +1,12 @@
 "use client";
 
 import { useState } from "react";
+import { Video } from "lucide-react";
 
 import { submitDubbingAction } from "@/app/(dashboard)/dashboard/dubbing/_actions/submit-dubbing";
 import { usePipelinePoller } from "@/app/(dashboard)/dashboard/multi-shot/_hooks/use-pipeline-poller";
 import { PipelineTracker } from "@/components/studio/pipeline-tracker";
+import { StudioEmptyState } from "@/components/studio/studio-empty-state";
 import { StudioShell } from "@/components/studio/studio-shell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -160,7 +162,7 @@ export function DubbingForm({
     ) : view?.status === "FAILED" ? (
       <p className="text-sm text-destructive">{view.error ?? "Dubbing failed."}</p>
     ) : (
-      <p className="text-sm text-muted-foreground">Your dubbed video will appear here</p>
+      <StudioEmptyState icon={Video} description="Your dubbed video will appear here." />
     );
 
   return (
